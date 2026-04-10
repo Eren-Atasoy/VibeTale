@@ -3,6 +3,7 @@ import 'package:vibe_tale/features/auth/presentation/screens/login_screen.dart';
 import 'package:vibe_tale/features/auth/presentation/screens/signup_screen.dart';
 import 'package:vibe_tale/features/book_details/presentation/screens/book_details_screen.dart';
 import 'package:vibe_tale/features/file_upload/presentation/screens/file_upload_screen.dart';
+import 'package:vibe_tale/features/home/presentation/screens/home_screen.dart';
 import 'package:vibe_tale/features/library/presentation/screens/library_screen.dart';
 import 'package:vibe_tale/features/profile/presentation/screens/profile_screen.dart';
 import 'package:vibe_tale/features/reader/presentation/screens/immersive_read_screen.dart';
@@ -12,6 +13,7 @@ import 'package:vibe_tale/features/vibe_engine/presentation/screens/vibe_analysi
 abstract final class AppRoutes {
   static const String login = '/login';
   static const String signup = '/signup';
+  static const String home = '/home';
   static const String library = '/library';
   static const String bookDetails = '/book/:bookId';
   static const String fileUpload = '/upload';
@@ -33,6 +35,11 @@ final appRouter = GoRouter(
       path: AppRoutes.signup,
       name: 'signup',
       builder: (context, state) => const SignupScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.home,
+      name: 'home',
+      builder: (context, state) => const HomeScreen(),
     ),
     GoRoute(
       path: AppRoutes.library,

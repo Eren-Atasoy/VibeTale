@@ -93,7 +93,7 @@ class _SignupScreenState extends State<SignupScreen> {
     Future.delayed(const Duration(seconds: 1), () {
       if (!mounted) return;
       setState(() => _isLoading = false);
-      context.go(AppRoutes.library);
+      context.go(AppRoutes.home);
     });
   }
 
