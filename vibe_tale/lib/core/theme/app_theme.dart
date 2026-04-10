@@ -128,12 +128,77 @@ abstract final class AppTheme {
     );
   }
 
-  // static ThemeData  get light
-  // {
-  //   return ThemeData.light(useMaterial3: true).copyWith(
-  //     scaffoldBackgroundColor: AppColors.error,
-  //     colorScheme: const ColorScheme.light(
-
-  //   );
-  // }
+  static ThemeData get light {
+    return ThemeData.light(useMaterial3: true).copyWith(
+      scaffoldBackgroundColor: const Color(0xFFF4F6F5),
+      colorScheme: const ColorScheme.light(
+        primary: Color(0xFFD4A832),
+        onPrimary: Colors.white,
+        secondary: Color(0xFFD4A832),
+        onSecondary: Colors.white,
+        surface: Color(0xFFFFFFFF),
+        onSurface: Color(0xFF1A1A1A),
+        error: Color(0xFFB00020),
+      ),
+      textTheme: GoogleFonts.poppinsTextTheme(ThemeData.light().textTheme),
+      appBarTheme: AppBarTheme(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: true,
+        systemOverlayStyle: SystemUiOverlayStyle.dark,
+        titleTextStyle: GoogleFonts.poppins(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: const Color(0xFF1A1A1A),
+          letterSpacing: 1.5,
+        ),
+        iconTheme: const IconThemeData(color: Color(0xFF1A1A1A)),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFFD4A832),
+          foregroundColor: Colors.white,
+          minimumSize: const Size(double.infinity, AppDimensions.buttonHeight),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
+          ),
+          textStyle: GoogleFonts.poppins(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.5,
+          ),
+          elevation: 0,
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: const Color(0xFFEEF0EF),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppDimensions.spaceMD,
+          vertical: AppDimensions.spaceMD,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusSM),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusSM),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusSM),
+          borderSide: const BorderSide(
+              color: Color(0xFFD4A832), width: 1.5),
+        ),
+        hintStyle: GoogleFonts.poppins(
+            fontSize: 14, color: const Color(0xFF9E9E9E)),
+      ),
+      dividerTheme: const DividerThemeData(
+        color: Color(0xFFDEE2E0),
+        thickness: 0.5,
+      ),
+      iconTheme: const IconThemeData(color: Color(0xFF616161)),
+    );
+  }
 }

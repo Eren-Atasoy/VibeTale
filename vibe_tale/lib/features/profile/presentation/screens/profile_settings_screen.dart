@@ -1,23 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:vibe_tale/core/constants/app_colors.dart';
 import 'package:vibe_tale/core/constants/app_dimensions.dart';
 import 'package:vibe_tale/core/constants/app_typography.dart';
+import 'package:vibe_tale/core/providers/app_settings_provider.dart';
 import 'package:vibe_tale/core/router/app_router.dart';
 import 'package:vibe_tale/core/widgets/glass_card.dart';
 
-class ProfileSettingsScreen extends StatefulWidget {
+class ProfileSettingsScreen extends ConsumerStatefulWidget {
   const ProfileSettingsScreen({super.key});
 
   @override
-  State<ProfileSettingsScreen> createState() => _ProfileSettingsScreenState();
+  ConsumerState<ProfileSettingsScreen> createState() =>
+      _ProfileSettingsScreenState();
 }
 
-class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
+class _ProfileSettingsScreenState
+    extends ConsumerState<ProfileSettingsScreen> {
   bool _notificationsOn = true;
   bool _readingReminder = false;
-  bool _isDarkMode = true;
-  String _selectedLanguage = 'Türkçe';
+  // themeMode and language are managed by Riverpod providers
 
   // ── Switch helper ─────────────────────────────────────────────────────────
 
@@ -35,7 +38,12 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   // ── Bottom sheet & dialog helpers ─────────────────────────────────────────
 
   void _showLanguageSheet() {
-    final languages = ['Türkçe', 'English', 'Deutsch', 'Español', 'Français'];
+    const languages = [
+      ('Türkçe', 'tr'),
+      ('English', 'en'),
+    ];
+    final currentLang = ref.read(appLanguageProvider);
+
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -43,18 +51,39 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         title: 'Dil Seç',
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          children: languages.map((lang) {
-            final isSelected = lang == _selectedLanguage;
+          children: languages.map((entry) {
+            final (label, code) = entry;
+            final isSelected = code == currentLang;
             return _SheetOptionTile(
-              label: lang,
+              label: label,
               isSelected: isSelected,
               onTap: () {
-                setState(() => _selectedLanguage = lang);
+                ref.read(appLanguageProvider.notifier).state = code;
                 Navigator.of(context).pop();
+                _showSnackBar(
+                  code == 'tr'
+                      ? 'Dil Türkçe olarak değiştirildi'
+                      : 'Language changed to English',
+                );
               },
             );
           }).toList(),
         ),
+      ),
+    );
+  }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: AppTypography.bodyMedium),
+        backgroundColor: const Color(0xFF0F2A30),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusSM),
+          side: const BorderSide(color: AppColors.glassBorder),
+        ),
+        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -255,6 +284,10 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final themeMode = ref.watch(themeModeProvider);
+    final isDark = themeMode == ThemeMode.dark;
+    final currentLang = ref.watch(appLanguageProvider);
+    final langLabel = currentLang == 'tr' ? 'Türkçe' : 'English';
 
     return Container(
       decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
@@ -295,7 +328,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                           ),
                         ),
                         _SettingsTile(
-                          icon: _isDarkMode
+                          icon: isDark
                               ? Icons.dark_mode_outlined
                               : Icons.light_mode_outlined,
                           label: 'Tema',
@@ -303,7 +336,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                _isDarkMode ? 'Karanlık' : 'Aydınlık',
+                                isDark ? 'Karanlık' : 'Aydınlık',
                                 style: AppTypography.bodyMedium.copyWith(
                                   color: AppColors.textSecondary,
                                   fontSize: 13,
@@ -311,8 +344,12 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                               ),
                               const SizedBox(width: 8),
                               _buildSwitch(
-                                _isDarkMode,
-                                (v) => setState(() => _isDarkMode = v),
+                                isDark,
+                                (v) => ref
+                                    .read(themeModeProvider.notifier)
+                                    .state = v
+                                    ? ThemeMode.dark
+                                    : ThemeMode.light,
                               ),
                             ],
                           ),
@@ -324,7 +361,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                _selectedLanguage,
+                                langLabel,
                                 style: AppTypography.bodyMedium.copyWith(
                                   color: AppColors.textSecondary,
                                   fontSize: 13,
