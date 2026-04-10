@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(flutter:*)",
+      "Bash(dart analyze:*)"
+    ]
+  }
+}
