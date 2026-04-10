@@ -51,11 +51,19 @@ abstract final class AppColors {
   static const Color success = Color(0xFF4CAF50);
 
   // ── Gradients ──────────────────────────────────────────────────────────────
+  /// Smooth cinematic dark gradient — 5 stops to eliminate banding.
+  /// #0B3B42 (teal top) → #030F12 (near-black bottom)
   static const LinearGradient backgroundGradient = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    colors: [Color(0xFF0B3B42), Color(0xFF030F12)],
-    stops: [0.0, 1.0],
+    colors: [
+      Color(0xFF0B3B42), // 0%   — teal top
+      Color(0xFF082C32), // 22%  — teal-dark
+      Color(0xFF061E24), // 45%  — mid transition
+      Color(0xFF041318), // 68%  — deep dark
+      Color(0xFF030F12), // 100% — near-black
+    ],
+    stops: [0.0, 0.22, 0.45, 0.68, 1.0],
   );
 
   static const LinearGradient amberGradient = LinearGradient(

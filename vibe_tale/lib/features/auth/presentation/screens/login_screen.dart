@@ -80,8 +80,10 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // Gradient Container covers full body including behind status bar;
+      // backgroundColor is set to gradient's bottom colour as fallback.
       backgroundColor: AppColors.backgroundDeep,
-      body: Container(
+      body: DecoratedBox(
         decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
         child: SafeArea(
           child: SingleChildScrollView(
