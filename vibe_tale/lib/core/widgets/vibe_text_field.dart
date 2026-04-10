@@ -5,17 +5,24 @@ import 'package:vibe_tale/core/constants/app_typography.dart';
 
 /// Glassmorphic dark input field matching the VibeTale mockup style.
 ///
+/// Displays [errorText] below the field when non-null; clears automatically
+/// when the parent sets it back to null.
+///
 /// Usage:
 /// ```dart
 /// VibeTextField(
 ///   controller: _emailController,
 ///   hint: 'E-posta Adresi',
-///   prefixIcon: Icons.email_outlined,
+///   suffixIcon: Icons.email_outlined,
+///   errorText: _emailError,
+///   onChanged: _validateEmail,
 /// )
 ///
 /// VibeTextField.password(
 ///   controller: _passController,
 ///   hint: 'Şifre',
+///   errorText: _passwordError,
+///   onChanged: _validatePassword,
 /// )
 /// ```
 class VibeTextField extends StatefulWidget {
@@ -31,6 +38,7 @@ class VibeTextField extends StatefulWidget {
     this.onChanged,
     this.onSubmitted,
     this.label,
+    this.errorText,
     this.autofocus = false,
   });
 
@@ -41,6 +49,7 @@ class VibeTextField extends StatefulWidget {
     this.label,
     this.onChanged,
     this.onSubmitted,
+    this.errorText,
     this.autofocus = false,
   }) : isPassword = true,
        prefixIcon = Icons.lock_outline_rounded,
@@ -58,6 +67,10 @@ class VibeTextField extends StatefulWidget {
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
   final String? label;
+
+  /// When non-null, shows a red error message directly below the field.
+  /// Set to null to clear the error.
+  final String? errorText;
   final bool autofocus;
 
   @override
@@ -66,6 +79,26 @@ class VibeTextField extends StatefulWidget {
 
 class _VibeTextFieldState extends State<VibeTextField> {
   bool _obscure = true;
+  bool _hasFocus = false;
+  late final FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode = FocusNode()
+      ..addListener(() {
+        setState(() => _hasFocus = _focusNode.hasFocus);
+      });
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  bool get _hasError =>
+      widget.errorText != null && widget.errorText!.isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
@@ -77,10 +110,23 @@ class _VibeTextFieldState extends State<VibeTextField> {
           Text(widget.label!, style: AppTypography.bodyMedium),
           const SizedBox(height: AppDimensions.spaceSM),
         ],
-        SizedBox(
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
           height: AppDimensions.inputHeight,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppDimensions.radiusSM),
+            border: Border.all(
+              color: _hasError
+                  ? AppColors.error
+                  : _hasFocus
+                  ? AppColors.primary
+                  : Colors.transparent,
+              width: _hasError || _hasFocus ? 1.5 : 0,
+            ),
+          ),
           child: TextField(
             controller: widget.controller,
+            focusNode: _focusNode,
             obscureText: widget.isPassword && _obscure,
             keyboardType: widget.keyboardType,
             textInputAction: widget.textInputAction,
@@ -106,10 +152,60 @@ class _VibeTextFieldState extends State<VibeTextField> {
                       onPressed: () => setState(() => _obscure = !_obscure),
                     )
                   : widget.suffixIcon != null
-                  ? Icon(widget.suffixIcon, size: 18)
+                  ? Icon(
+                      widget.suffixIcon,
+                      size: 18,
+                      color: _hasError
+                          ? AppColors.error
+                          : AppColors.textSecondary,
+                    )
                   : null,
+              // Border handled by AnimatedContainer above
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppDimensions.radiusSM),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppDimensions.radiusSM),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppDimensions.radiusSM),
+                borderSide: BorderSide.none,
+              ),
             ),
           ),
+        ),
+        // Error message — animated in/out
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          transitionBuilder: (child, animation) => FadeTransition(
+            opacity: animation,
+            child: SizeTransition(sizeFactor: animation, child: child),
+          ),
+          child: _hasError
+              ? Padding(
+                  key: ValueKey(widget.errorText),
+                  padding: const EdgeInsets.only(top: 6, left: 4),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.error_outline_rounded,
+                        size: 13,
+                        color: AppColors.error,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        widget.errorText!,
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: AppColors.error,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : const SizedBox.shrink(),
         ),
       ],
     );

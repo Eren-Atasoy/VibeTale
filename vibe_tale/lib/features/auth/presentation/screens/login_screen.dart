@@ -7,6 +7,23 @@ import 'package:vibe_tale/core/router/app_router.dart';
 import 'package:vibe_tale/core/widgets/neon_button.dart';
 import 'package:vibe_tale/core/widgets/vibe_text_field.dart';
 
+// ── Validation helpers ────────────────────────────────────────────────────────
+
+String? _validateEmail(String value) {
+  if (value.isEmpty) return 'E-posta adresi boş bırakılamaz.';
+  final emailRegex = RegExp(r'^[\w.+-]+@[\w-]+\.[a-zA-Z]{2,}$');
+  if (!emailRegex.hasMatch(value)) return 'Geçerli bir e-posta adresi gir.';
+  return null;
+}
+
+String? _validatePassword(String value) {
+  if (value.isEmpty) return 'Şifre boş bırakılamaz.';
+  if (value.length < 6) return 'Şifre en az 6 karakter olmalı.';
+  return null;
+}
+
+// ── Screen ────────────────────────────────────────────────────────────────────
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -17,6 +34,9 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  String? _emailError;
+  String? _passwordError;
   bool _isLoading = false;
 
   @override
@@ -26,9 +46,30 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  void _onEmailChanged(String value) {
+    final error = _validateEmail(value);
+    if (_emailError != error) setState(() => _emailError = error);
+  }
+
+  void _onPasswordChanged(String value) {
+    final error = _validatePassword(value);
+    if (_passwordError != error) setState(() => _passwordError = error);
+  }
+
+  bool _validateAll() {
+    final emailErr = _validateEmail(_emailController.text);
+    final passErr = _validatePassword(_passwordController.text);
+    setState(() {
+      _emailError = emailErr;
+      _passwordError = passErr;
+    });
+    return emailErr == null && passErr == null;
+  }
+
   void _handleLogin() {
+    if (!_validateAll()) return;
     setState(() => _isLoading = true);
-    // TODO: wire up auth provider
+    // TODO: wire up auth provider / REST API
     Future.delayed(const Duration(seconds: 1), () {
       if (!mounted) return;
       setState(() => _isLoading = false);
@@ -64,7 +105,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     _FormSection(
                       emailController: _emailController,
                       passwordController: _passwordController,
+                      emailError: _emailError,
+                      passwordError: _passwordError,
                       isLoading: _isLoading,
+                      onEmailChanged: _onEmailChanged,
+                      onPasswordChanged: _onPasswordChanged,
                       onLogin: _handleLogin,
                     ),
                     const SizedBox(height: AppDimensions.spaceLG),
@@ -104,13 +149,21 @@ class _FormSection extends StatelessWidget {
   const _FormSection({
     required this.emailController,
     required this.passwordController,
+    required this.emailError,
+    required this.passwordError,
     required this.isLoading,
+    required this.onEmailChanged,
+    required this.onPasswordChanged,
     required this.onLogin,
   });
 
   final TextEditingController emailController;
   final TextEditingController passwordController;
+  final String? emailError;
+  final String? passwordError;
   final bool isLoading;
+  final ValueChanged<String> onEmailChanged;
+  final ValueChanged<String> onPasswordChanged;
   final VoidCallback onLogin;
 
   @override
@@ -131,12 +184,16 @@ class _FormSection extends StatelessWidget {
           suffixIcon: Icons.mail_outline_rounded,
           keyboardType: TextInputType.emailAddress,
           textInputAction: TextInputAction.next,
+          onChanged: onEmailChanged,
+          errorText: emailError,
         ),
         const SizedBox(height: AppDimensions.spaceMD),
         VibeTextField.password(
           hint: 'Şifre',
           controller: passwordController,
+          onChanged: onPasswordChanged,
           onSubmitted: (_) => onLogin(),
+          errorText: passwordError,
         ),
         const SizedBox(height: AppDimensions.spaceLG),
         NeonButton(

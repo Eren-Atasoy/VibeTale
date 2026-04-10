@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 /// Derived directly from UI mockups.
 abstract final class AppColors {
   // ── Backgrounds ────────────────────────────────────────────────────────────
-  /// Deepest background — almost black teal-green
-  static const Color backgroundDeep = Color(0xFF0D1A14);
+  /// Deepest background — matches gradient bottom
+  static const Color backgroundDeep = Color(0xFF030F12);
 
   /// Primary surface — dark teal-green cards and containers
   static const Color backgroundSurface = Color(0xFF1A2E20);
@@ -54,7 +54,8 @@ abstract final class AppColors {
   static const LinearGradient backgroundGradient = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    colors: [Color(0xFF0D1F16), Color(0xFF0B1810), Color(0xFF091410)],
+    colors: [Color(0xFF0B3B42), Color(0xFF030F12)],
+    stops: [0.0, 1.0],
   );
 
   static const LinearGradient amberGradient = LinearGradient(
