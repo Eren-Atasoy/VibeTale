@@ -133,7 +133,7 @@ abstract final class AppTheme {
   //   return ThemeData.light(useMaterial3: true).copyWith(
   //     scaffoldBackgroundColor: AppColors.error,
   //     colorScheme: const ColorScheme.light(
-        
+
   //   );
   // }
 }

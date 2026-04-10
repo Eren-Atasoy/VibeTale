@@ -58,9 +58,7 @@ class BookDetailsScreen extends StatelessWidget {
             CustomScrollView(
               slivers: [
                 _CoverAppBar(book: book),
-                SliverToBoxAdapter(
-                  child: _DetailsPanel(book: book),
-                ),
+                SliverToBoxAdapter(child: _DetailsPanel(book: book)),
               ],
             ),
           ],
@@ -86,9 +84,9 @@ class _BlurredHeroBackground extends StatelessWidget {
           CachedNetworkImage(
             imageUrl: imageUrl,
             fit: BoxFit.cover,
-            placeholder: (_, __) =>
+            placeholder: (_, _) =>
                 Container(color: AppColors.backgroundSurface),
-            errorWidget: (_, __, ___) =>
+            errorWidget: (_, _, _) =>
                 Container(color: AppColors.backgroundSurface),
           ),
           BackdropFilter(
@@ -174,15 +172,13 @@ class _CoverAppBar extends StatelessWidget {
                   ],
                 ),
                 child: ClipRRect(
-                  borderRadius:
-                      BorderRadius.circular(AppDimensions.radiusMD),
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusMD),
                   child: CachedNetworkImage(
                     imageUrl: book.coverUrl,
                     fit: BoxFit.cover,
-                    placeholder: (_, __) => Container(
-                      color: AppColors.backgroundElevated,
-                    ),
-                    errorWidget: (_, __, ___) => Container(
+                    placeholder: (_, _) =>
+                        Container(color: AppColors.backgroundElevated),
+                    errorWidget: (_, _, _) => Container(
                       color: AppColors.backgroundElevated,
                       child: const Icon(
                         Icons.book_outlined,
@@ -254,8 +250,7 @@ class _DetailsPanel extends StatelessWidget {
           // CTA buttons
           NeonButton(
             label: 'OKUMAYA BAŞLA',
-            onPressed: () =>
-                context.push('/vibe-analysis/${book.id}'),
+            onPressed: () => context.push('/vibe-analysis/${book.id}'),
           ),
           const SizedBox(height: AppDimensions.spaceMD),
           NeonButton.outlined(
@@ -286,9 +281,7 @@ class _MetaRow extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             book.rating.toStringAsFixed(1),
-            style: AppTypography.titleMedium.copyWith(
-              color: AppColors.primary,
-            ),
+            style: AppTypography.titleMedium.copyWith(color: AppColors.primary),
           ),
           _Dot(),
         ],
@@ -297,16 +290,10 @@ class _MetaRow extends StatelessWidget {
         // Page count
         if (book.pageCount > 0) ...[
           _Dot(),
-          Text(
-            '${book.pageCount} sayfa',
-            style: AppTypography.bodyMedium,
-          ),
+          Text('${book.pageCount} sayfa', style: AppTypography.bodyMedium),
         ],
         // New badge
-        if (book.isNew) ...[
-          _Dot(),
-          _Chip(label: 'YENİ', isAccent: true),
-        ],
+        if (book.isNew) ...[_Dot(), _Chip(label: 'YENİ', isAccent: true)],
       ],
     );
   }
@@ -370,15 +357,16 @@ class _NotFoundView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration:
-          const BoxDecoration(gradient: AppColors.backgroundGradient),
+      decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_rounded,
-                color: AppColors.textPrimary),
+            icon: const Icon(
+              Icons.arrow_back_rounded,
+              color: AppColors.textPrimary,
+            ),
             onPressed: () => context.pop(),
           ),
         ),
@@ -386,8 +374,11 @@ class _NotFoundView extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.search_off_rounded,
-                  color: AppColors.textSecondary, size: 48),
+              const Icon(
+                Icons.search_off_rounded,
+                color: AppColors.textSecondary,
+                size: 48,
+              ),
               const SizedBox(height: AppDimensions.spaceMD),
               Text('Kitap bulunamadı', style: AppTypography.titleLarge),
               const SizedBox(height: AppDimensions.spaceSM),

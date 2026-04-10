@@ -93,8 +93,11 @@ class _LibraryTopBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.menu_book_rounded,
-              color: AppColors.primary, size: 28),
+          const Icon(
+            Icons.menu_book_rounded,
+            color: AppColors.primary,
+            size: 28,
+          ),
           const SizedBox(width: AppDimensions.spaceSM),
           Text(
             'Kütüphanem',
@@ -193,8 +196,7 @@ class _ReadingTab extends StatelessWidget {
         AppDimensions.bottomNavHeight + bottomPadding + 16,
       ),
       itemCount: books.length,
-      separatorBuilder: (_, __) =>
-          const SizedBox(height: AppDimensions.spaceMD),
+      separatorBuilder: (_, _) => const SizedBox(height: AppDimensions.spaceMD),
       itemBuilder: (context, index) {
         final book = books[index];
         return _ReadingCard(book: book, onTap: () => onBookTap(book));
@@ -225,11 +227,7 @@ class _ReadingCard extends StatelessWidget {
         child: Row(
           children: [
             // Book cover
-            BookCoverCard(
-              imageUrl: book.coverUrl,
-              width: 72,
-              onTap: onTap,
-            ),
+            BookCoverCard(imageUrl: book.coverUrl, width: 72, onTap: onTap),
             const SizedBox(width: AppDimensions.spaceMD),
             // Info
             Expanded(
@@ -266,8 +264,9 @@ class _ReadingCard extends StatelessWidget {
                         height: 4,
                         decoration: BoxDecoration(
                           color: AppColors.glassBorder,
-                          borderRadius:
-                              BorderRadius.circular(AppDimensions.radiusPill),
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.radiusPill,
+                          ),
                         ),
                       ),
                       FractionallySizedBox(
@@ -277,7 +276,8 @@ class _ReadingCard extends StatelessWidget {
                           decoration: BoxDecoration(
                             gradient: AppColors.amberGradient,
                             borderRadius: BorderRadius.circular(
-                                AppDimensions.radiusPill),
+                              AppDimensions.radiusPill,
+                            ),
                           ),
                         ),
                       ),
@@ -403,8 +403,7 @@ class _SavedTab extends StatelessWidget {
         AppDimensions.bottomNavHeight + bottomPadding + 16,
       ),
       itemCount: books.length,
-      separatorBuilder: (_, __) =>
-          const SizedBox(height: AppDimensions.spaceMD),
+      separatorBuilder: (_, _) => const SizedBox(height: AppDimensions.spaceMD),
       itemBuilder: (context, index) {
         final book = books[index];
         return _SavedCard(book: book, onTap: () => onBookTap(book));

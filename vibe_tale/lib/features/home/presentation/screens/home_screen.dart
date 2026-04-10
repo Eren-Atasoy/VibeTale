@@ -216,8 +216,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: _DiscoveryContent(
                   filters: _filters,
                   selectedFilter: _selectedFilter,
-                  onFilterChanged: (i) =>
-                      setState(() => _selectedFilter = i),
+                  onFilterChanged: (i) => setState(() => _selectedFilter = i),
                   onBookTap: _onBookTap,
                 ),
               ),
@@ -251,8 +250,11 @@ class _HomeTopBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.auto_stories_rounded,
-              color: AppColors.primary, size: 28),
+          const Icon(
+            Icons.auto_stories_rounded,
+            color: AppColors.primary,
+            size: 28,
+          ),
           const SizedBox(width: AppDimensions.spaceSM),
           Text(
             'Keşfet',
@@ -374,7 +376,7 @@ class _FilterChipsRow extends StatelessWidget {
           horizontal: AppDimensions.screenPaddingH,
         ),
         itemCount: filters.length,
-        separatorBuilder: (_, __) =>
+        separatorBuilder: (_, _) =>
             const SizedBox(width: AppDimensions.spaceSM),
         itemBuilder: (context, index) {
           final isSelected = index == selectedIndex;
@@ -382,16 +384,12 @@ class _FilterChipsRow extends StatelessWidget {
             onTap: () => onChanged(index),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
                 color: Colors.transparent,
-                borderRadius:
-                    BorderRadius.circular(AppDimensions.radiusPill),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
                 border: Border.all(
-                  color: isSelected
-                      ? AppColors.primary
-                      : AppColors.glassBorder,
+                  color: isSelected ? AppColors.primary : AppColors.glassBorder,
                   width: isSelected ? 1.5 : 1,
                 ),
               ),
@@ -401,8 +399,7 @@ class _FilterChipsRow extends StatelessWidget {
                   color: isSelected
                       ? AppColors.primary
                       : AppColors.textSecondary,
-                  fontWeight:
-                      isSelected ? FontWeight.w600 : FontWeight.w400,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                   fontSize: 12,
                 ),
               ),
@@ -468,8 +465,7 @@ class _HeroBanner extends StatelessWidget {
                     Text(
                       book.series!.toUpperCase(),
                       style: AppTypography.labelSmall.copyWith(
-                        color: AppColors.backgroundDeep
-                            .withValues(alpha: 0.65),
+                        color: AppColors.backgroundDeep.withValues(alpha: 0.65),
                         letterSpacing: 2.0,
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
@@ -515,8 +511,9 @@ class _HeroBanner extends StatelessWidget {
                             Text(
                               '${book.series ?? book.genre} • Popüler',
                               style: AppTypography.bodyMedium.copyWith(
-                                color: AppColors.backgroundDeep
-                                    .withValues(alpha: 0.7),
+                                color: AppColors.backgroundDeep.withValues(
+                                  alpha: 0.7,
+                                ),
                                 fontSize: 11,
                               ),
                             ),
@@ -618,7 +615,7 @@ class _BookSection extends StatelessWidget {
               horizontal: AppDimensions.screenPaddingH,
             ),
             itemCount: books.length,
-            separatorBuilder: (_, __) =>
+            separatorBuilder: (_, _) =>
                 const SizedBox(width: AppDimensions.spaceMD),
             itemBuilder: (context, index) {
               final book = books[index];
@@ -701,8 +698,9 @@ class _HomeSearchDialogState extends State<HomeSearchDialog> {
             left: 16,
             right: 16,
           ),
-          constraints:
-              BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.75),
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.75,
+          ),
           decoration: BoxDecoration(
             color: const Color(0xFF0F2A30),
             borderRadius: BorderRadius.circular(AppDimensions.radiusLG),
@@ -722,8 +720,11 @@ class _HomeSearchDialogState extends State<HomeSearchDialog> {
                 padding: const EdgeInsets.fromLTRB(16, 14, 8, 14),
                 child: Row(
                   children: [
-                    const Icon(Icons.search_rounded,
-                        color: AppColors.textSecondary, size: 22),
+                    const Icon(
+                      Icons.search_rounded,
+                      color: AppColors.textSecondary,
+                      size: 22,
+                    ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: TextField(
@@ -736,8 +737,9 @@ class _HomeSearchDialogState extends State<HomeSearchDialog> {
                         cursorColor: AppColors.primary,
                         decoration: InputDecoration(
                           hintText: 'Kitap, yazar veya kategori ara...',
-                          hintStyle:
-                              AppTypography.bodyMedium.copyWith(fontSize: 14),
+                          hintStyle: AppTypography.bodyMedium.copyWith(
+                            fontSize: 14,
+                          ),
                           border: InputBorder.none,
                           isDense: true,
                           contentPadding: EdgeInsets.zero,
@@ -753,8 +755,11 @@ class _HomeSearchDialogState extends State<HomeSearchDialog> {
                         },
                         child: const Padding(
                           padding: EdgeInsets.all(8),
-                          child: Icon(Icons.close_rounded,
-                              color: AppColors.textSecondary, size: 20),
+                          child: Icon(
+                            Icons.close_rounded,
+                            color: AppColors.textSecondary,
+                            size: 20,
+                          ),
                         ),
                       )
                     else
@@ -763,8 +768,9 @@ class _HomeSearchDialogState extends State<HomeSearchDialog> {
                         child: Text(
                           'İptal',
                           style: AppTypography.bodyMedium.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w500),
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
                   ],
@@ -776,11 +782,16 @@ class _HomeSearchDialogState extends State<HomeSearchDialog> {
                   padding: const EdgeInsets.all(24),
                   child: Column(
                     children: [
-                      const Icon(Icons.search_rounded,
-                          color: AppColors.textSecondary, size: 36),
+                      const Icon(
+                        Icons.search_rounded,
+                        color: AppColors.textSecondary,
+                        size: 36,
+                      ),
                       const SizedBox(height: 10),
-                      Text('Kitap, yazar veya kategori gir',
-                          style: AppTypography.bodyMedium),
+                      Text(
+                        'Kitap, yazar veya kategori gir',
+                        style: AppTypography.bodyMedium,
+                      ),
                     ],
                   ),
                 )
@@ -789,12 +800,17 @@ class _HomeSearchDialogState extends State<HomeSearchDialog> {
                   padding: const EdgeInsets.all(24),
                   child: Column(
                     children: [
-                      const Icon(Icons.search_off_rounded,
-                          color: AppColors.textSecondary, size: 36),
+                      const Icon(
+                        Icons.search_off_rounded,
+                        color: AppColors.textSecondary,
+                        size: 36,
+                      ),
                       const SizedBox(height: 10),
-                      Text('"$_query" için sonuç bulunamadı',
-                          style: AppTypography.bodyMedium,
-                          textAlign: TextAlign.center),
+                      Text(
+                        '"$_query" için sonuç bulunamadı',
+                        style: AppTypography.bodyMedium,
+                        textAlign: TextAlign.center,
+                      ),
                     ],
                   ),
                 )
@@ -804,13 +820,18 @@ class _HomeSearchDialogState extends State<HomeSearchDialog> {
                     shrinkWrap: true,
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     itemCount: results.length,
-                    separatorBuilder: (_, __) => const Divider(
-                        color: AppColors.glassBorder, height: 1, indent: 72),
+                    separatorBuilder: (_, _) => const Divider(
+                      color: AppColors.glassBorder,
+                      height: 1,
+                      indent: 72,
+                    ),
                     itemBuilder: (context, index) {
                       final book = results[index];
                       return ListTile(
                         contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 4),
+                          horizontal: 16,
+                          vertical: 4,
+                        ),
                         leading: ClipRRect(
                           borderRadius: BorderRadius.circular(6),
                           child: SizedBox(
@@ -819,22 +840,31 @@ class _HomeSearchDialogState extends State<HomeSearchDialog> {
                             child: Image.network(
                               book.coverUrl,
                               fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Container(
+                              errorBuilder: (_, _, _) => Container(
                                 color: AppColors.backgroundElevated,
-                                child: const Icon(Icons.book_outlined,
-                                    color: AppColors.textSecondary, size: 20),
+                                child: const Icon(
+                                  Icons.book_outlined,
+                                  color: AppColors.textSecondary,
+                                  size: 20,
+                                ),
                               ),
                             ),
                           ),
                         ),
-                        title: Text(book.title,
-                            style: AppTypography.titleMedium
-                                .copyWith(fontSize: 13),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis),
-                        subtitle: Text('${book.author} • ${book.genre}',
-                            style: AppTypography.bodyMedium
-                                .copyWith(fontSize: 11)),
+                        title: Text(
+                          book.title,
+                          style: AppTypography.titleMedium.copyWith(
+                            fontSize: 13,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        subtitle: Text(
+                          '${book.author} • ${book.genre}',
+                          style: AppTypography.bodyMedium.copyWith(
+                            fontSize: 11,
+                          ),
+                        ),
                         onTap: () {
                           Navigator.of(context).pop();
                           context.push('/book/${book.id}');

@@ -95,7 +95,9 @@ class _LoginScreenState extends State<LoginScreen> {
           extendBody: true,
           body: SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: AppDimensions.screenPaddingH),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppDimensions.screenPaddingH,
+              ),
               child: ConstrainedBox(
                 constraints: BoxConstraints(
                   minHeight:
@@ -182,7 +184,10 @@ class _FormSection extends StatelessWidget {
       children: [
         Text('Yolculuğuna Başla', style: AppTypography.displayMedium),
         const SizedBox(height: AppDimensions.spaceSM),
-        Text('Devam etmek için bilgilerini gir.', style: AppTypography.bodyMedium),
+        Text(
+          'Devam etmek için bilgilerini gir.',
+          style: AppTypography.bodyMedium,
+        ),
         const SizedBox(height: AppDimensions.spaceXL),
         VibeTextField(
           hint: 'E-posta Adresi',
@@ -202,7 +207,11 @@ class _FormSection extends StatelessWidget {
           errorText: passwordError,
         ),
         const SizedBox(height: AppDimensions.spaceLG),
-        NeonButton(label: 'GİRİŞ YAP', onPressed: onLogin, isLoading: isLoading),
+        NeonButton(
+          label: 'GİRİŞ YAP',
+          onPressed: onLogin,
+          isLoading: isLoading,
+        ),
       ],
     );
   }
@@ -227,11 +236,19 @@ class _SocialSection extends StatelessWidget {
                 shape: BoxShape.circle,
                 border: Border.all(color: AppColors.glassBorder, width: 1),
               ),
-              child: const Icon(Icons.face_outlined, color: AppColors.textSecondary, size: 22),
+              child: const Icon(
+                Icons.face_outlined,
+                color: AppColors.textSecondary,
+                size: 22,
+              ),
             ),
             const SizedBox(width: AppDimensions.spaceMD),
             Expanded(
-              child: NeonButton.outlined(label: 'Sihirli Bağlantı', onPressed: () {}, icon: Icons.mail_outline_rounded),
+              child: NeonButton.outlined(
+                label: 'Sihirli Bağlantı',
+                onPressed: () {},
+                icon: Icons.mail_outline_rounded,
+              ),
             ),
           ],
         ),
@@ -261,7 +278,10 @@ class _FooterLinks extends StatelessWidget {
                 const TextSpan(text: 'Yeni misin? '),
                 TextSpan(
                   text: 'Hesap Oluştur',
-                  style: AppTypography.bodyMedium.copyWith(color: AppColors.primary, fontWeight: FontWeight.w700),
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ],
             ),
@@ -285,7 +305,9 @@ class _DividerWithText extends StatelessWidget {
       children: [
         Expanded(child: Container(height: 0.5, color: AppColors.glassBorder)),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppDimensions.spaceMD),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppDimensions.spaceMD,
+          ),
           child: Text(label, style: AppTypography.labelSmall),
         ),
         Expanded(child: Container(height: 0.5, color: AppColors.glassBorder)),

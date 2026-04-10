@@ -6,6 +6,7 @@ import 'package:vibe_tale/features/file_upload/presentation/screens/file_upload_
 import 'package:vibe_tale/features/home/presentation/screens/home_screen.dart';
 import 'package:vibe_tale/features/library/presentation/screens/library_screen.dart';
 import 'package:vibe_tale/features/profile/presentation/screens/profile_screen.dart';
+import 'package:vibe_tale/features/profile/presentation/screens/profile_settings_screen.dart';
 import 'package:vibe_tale/features/reader/presentation/screens/immersive_read_screen.dart';
 import 'package:vibe_tale/features/stats/presentation/screens/reading_stats_screen.dart';
 import 'package:vibe_tale/features/vibe_engine/presentation/screens/vibe_analysis_screen.dart';
@@ -21,6 +22,7 @@ abstract final class AppRoutes {
   static const String immersiveRead = '/read/:bookId';
   static const String stats = '/stats';
   static const String profile = '/profile';
+  static const String profileSettings = '/profile/settings';
 }
 
 final appRouter = GoRouter(
@@ -84,6 +86,11 @@ final appRouter = GoRouter(
       path: AppRoutes.profile,
       name: 'profile',
       builder: (context, state) => const ProfileScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.profileSettings,
+      name: 'profile-settings',
+      builder: (context, state) => const ProfileSettingsScreen(),
     ),
   ],
 );
