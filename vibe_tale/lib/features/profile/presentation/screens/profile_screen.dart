@@ -5,6 +5,7 @@ import 'package:vibe_tale/core/constants/app_dimensions.dart';
 import 'package:vibe_tale/core/constants/app_typography.dart';
 import 'package:vibe_tale/core/router/app_router.dart';
 import 'package:vibe_tale/core/widgets/glass_card.dart';
+import 'package:vibe_tale/core/widgets/themed_background.dart';
 import 'package:vibe_tale/features/home/presentation/screens/home_screen.dart';
 import 'package:vibe_tale/features/profile/domain/models/user_profile.dart';
 
@@ -16,8 +17,7 @@ class ProfileScreen extends StatelessWidget {
     final profile = DummyProfile.current;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
-    return Container(
-      decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
+    return ThemedBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
         extendBody: true,

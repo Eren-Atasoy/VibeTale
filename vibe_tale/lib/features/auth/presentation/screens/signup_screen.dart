@@ -5,6 +5,7 @@ import 'package:vibe_tale/core/constants/app_dimensions.dart';
 import 'package:vibe_tale/core/constants/app_typography.dart';
 import 'package:vibe_tale/core/router/app_router.dart';
 import 'package:vibe_tale/core/widgets/neon_button.dart';
+import 'package:vibe_tale/core/widgets/themed_background.dart';
 import 'package:vibe_tale/core/widgets/vibe_text_field.dart';
 
 // ── Validation helpers ────────────────────────────────────────────────────────
@@ -99,8 +100,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
+    return ThemedBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
         extendBody: true,

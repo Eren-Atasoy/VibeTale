@@ -68,6 +68,20 @@ abstract final class AppColors {
     stops: [0.0, 0.12, 0.28, 0.45, 0.62, 0.80, 1.0],
   );
 
+  /// Light mode gradient — warm cream top → white bottom
+  static const LinearGradient backgroundGradientLight = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [
+      Color(0xFFD6EBEE),
+      Color(0xFFE6F2F4),
+      Color(0xFFF0F6F7),
+      Color(0xFFF8FAFA),
+      Color(0xFFFFFFFF),
+    ],
+    stops: [0.0, 0.25, 0.5, 0.75, 1.0],
+  );
+
   static const LinearGradient amberGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,

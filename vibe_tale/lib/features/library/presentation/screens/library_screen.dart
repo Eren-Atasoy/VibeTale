@@ -1,22 +1,26 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:vibe_tale/core/constants/app_colors.dart';
 import 'package:vibe_tale/core/constants/app_dimensions.dart';
 import 'package:vibe_tale/core/constants/app_typography.dart';
+import 'package:vibe_tale/core/providers/app_settings_provider.dart';
 import 'package:vibe_tale/core/widgets/book_cover_card.dart';
+import 'package:vibe_tale/core/widgets/themed_background.dart';
 import 'package:vibe_tale/features/home/presentation/screens/home_screen.dart';
 import 'package:vibe_tale/features/library/domain/book_model.dart';
 
 // ── Library Screen (Personal Collection) ─────────────────────────────────────
 
-class LibraryScreen extends StatefulWidget {
+class LibraryScreen extends ConsumerStatefulWidget {
   const LibraryScreen({super.key});
 
   @override
-  State<LibraryScreen> createState() => _LibraryScreenState();
+  ConsumerState<LibraryScreen> createState() => _LibraryScreenState();
 }
 
-class _LibraryScreenState extends State<LibraryScreen>
+class _LibraryScreenState extends ConsumerState<LibraryScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
 
@@ -34,8 +38,7 @@ class _LibraryScreenState extends State<LibraryScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
+    return ThemedBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
         extendBody: true,
@@ -79,11 +82,12 @@ class _LibraryScreenState extends State<LibraryScreen>
 
 // ── Library Top Bar ───────────────────────────────────────────────────────────
 
-class _LibraryTopBar extends StatelessWidget {
+class _LibraryTopBar extends ConsumerWidget {
   const _LibraryTopBar();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(appStringsProvider);
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppDimensions.screenPaddingH,
@@ -100,7 +104,7 @@ class _LibraryTopBar extends StatelessWidget {
           ),
           const SizedBox(width: AppDimensions.spaceSM),
           Text(
-            'Kütüphanem',
+            s.myLibrary,
             style: AppTypography.headlineMedium.copyWith(
               color: AppColors.primary,
               fontWeight: FontWeight.w700,
@@ -117,7 +121,7 @@ class _LibraryTopBar extends StatelessWidget {
               border: Border.all(color: AppColors.glassBorder),
             ),
             child: Text(
-              '${DummyBooks.currentlyReading.length + DummyBooks.completed.length + DummyBooks.saved.length} kitap',
+              '${DummyBooks.currentlyReading.length + DummyBooks.completed.length + DummyBooks.saved.length} ${ref.watch(appStringsProvider).books}',
               style: AppTypography.tagLabel.copyWith(
                 color: AppColors.textSecondary,
                 fontSize: 11,
@@ -132,13 +136,14 @@ class _LibraryTopBar extends StatelessWidget {
 
 // ── Library Tab Bar ───────────────────────────────────────────────────────────
 
-class _LibraryTabBar extends StatelessWidget {
+class _LibraryTabBar extends ConsumerWidget {
   const _LibraryTabBar({required this.controller});
 
   final TabController controller;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(appStringsProvider);
     return TabBar(
       controller: controller,
       isScrollable: true,
@@ -161,10 +166,10 @@ class _LibraryTabBar extends StatelessWidget {
         fontSize: 14,
       ),
       dividerColor: AppColors.glassBorder,
-      tabs: const [
-        Tab(text: 'Okuyorum'),
-        Tab(text: 'Tamamladım'),
-        Tab(text: 'Kaydedilenler'),
+      tabs: [
+        Tab(text: s.tabReading),
+        Tab(text: s.tabCompleted),
+        Tab(text: s.tabSaved),
       ],
     );
   }
@@ -337,8 +342,6 @@ class _CompletedTab extends StatelessWidget {
   final List<Book> books;
   final ValueChanged<Book> onBookTap;
 
-  static const _cardWidth = 100.0;
-
   @override
   Widget build(BuildContext context) {
     if (books.isEmpty) {
@@ -358,24 +361,87 @@ class _CompletedTab extends StatelessWidget {
       ),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
-        childAspectRatio: 0.58,
+        // cover(1/0.68 ≈ 1.47) + spacer(8) + title(~28) + gap(2) + genre(~14) ≈ 52px text
+        // childAspectRatio = width / (width/0.68 + 52) — set generous value
+        childAspectRatio: 0.50,
         crossAxisSpacing: AppDimensions.spaceMD,
         mainAxisSpacing: AppDimensions.spaceLG,
       ),
       itemCount: books.length,
       itemBuilder: (context, index) {
         final book = books[index];
-        return BookCoverCard(
-          imageUrl: book.coverUrl,
-          title: book.title,
-          subtitle: book.genre,
-          width: _cardWidth,
+        return _GridBookCard(
+          book: book,
           onTap: () => onBookTap(book),
         );
       },
     );
   }
 }
+
+// ── Grid Book Card — uses Expanded so image fills available space ─────────────
+
+class _GridBookCard extends StatelessWidget {
+  const _GridBookCard({required this.book, required this.onTap});
+
+  final Book book;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Image fills all remaining vertical space — no overflow possible
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppDimensions.radiusSM),
+              child: CachedNetworkImage(
+                imageUrl: book.coverUrl,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                placeholder: (_, __) => Container(
+                  color: AppColors.backgroundElevated,
+                  child: const Center(
+                    child: CircularProgressIndicator(
+                      color: AppColors.primary,
+                      strokeWidth: 2,
+                    ),
+                  ),
+                ),
+                errorWidget: (_, __, ___) => Container(
+                  color: AppColors.backgroundElevated,
+                  child: const Icon(
+                    Icons.book_outlined,
+                    color: AppColors.textSecondary,
+                    size: 28,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: AppDimensions.spaceSM),
+          Text(
+            book.title,
+            style: AppTypography.titleMedium.copyWith(fontSize: 11),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            book.genre,
+            style: AppTypography.bodyMedium.copyWith(fontSize: 10),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 
 // ── Kaydedilenler Tab ─────────────────────────────────────────────────────────
 

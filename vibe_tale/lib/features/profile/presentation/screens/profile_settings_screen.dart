@@ -7,6 +7,7 @@ import 'package:vibe_tale/core/constants/app_typography.dart';
 import 'package:vibe_tale/core/providers/app_settings_provider.dart';
 import 'package:vibe_tale/core/router/app_router.dart';
 import 'package:vibe_tale/core/widgets/glass_card.dart';
+import 'package:vibe_tale/core/widgets/themed_background.dart';
 
 class ProfileSettingsScreen extends ConsumerStatefulWidget {
   const ProfileSettingsScreen({super.key});
@@ -289,8 +290,7 @@ class _ProfileSettingsScreenState
     final currentLang = ref.watch(appLanguageProvider);
     final langLabel = currentLang == 'tr' ? 'Türkçe' : 'English';
 
-    return Container(
-      decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
+    return ThemedBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: SafeArea(

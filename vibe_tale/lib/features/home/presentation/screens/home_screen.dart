@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:vibe_tale/core/constants/app_colors.dart';
 import 'package:vibe_tale/core/constants/app_dimensions.dart';
 import 'package:vibe_tale/core/constants/app_typography.dart';
+import 'package:vibe_tale/core/providers/app_settings_provider.dart';
 import 'package:vibe_tale/core/router/app_router.dart';
 import 'package:vibe_tale/core/widgets/book_cover_card.dart';
+import 'package:vibe_tale/core/widgets/themed_background.dart';
 import 'package:vibe_tale/features/library/domain/book_model.dart';
 
 // ── Shared bottom nav helper — used by HomeScreen & LibraryScreen ─────────────
 
-class AppBottomNavBar extends StatelessWidget {
+class AppBottomNavBar extends ConsumerWidget {
   const AppBottomNavBar({
     super.key,
     required this.selectedIndex,
@@ -19,32 +22,12 @@ class AppBottomNavBar extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onItemSelected;
 
-  static const items = [
-    _NavItem(
-      icon: Icons.home_outlined,
-      activeIcon: Icons.home_rounded,
-      label: 'Anasayfa',
-    ),
-    _NavItem(
-      icon: Icons.menu_book_outlined,
-      activeIcon: Icons.menu_book_rounded,
-      label: 'Kütüphane',
-    ),
-    _NavItem(
-      icon: Icons.add_circle_outline_rounded,
-      activeIcon: Icons.add_circle_rounded,
-      label: 'Yeni',
-    ),
-    _NavItem(
-      icon: Icons.bar_chart_outlined,
-      activeIcon: Icons.bar_chart_rounded,
-      label: 'Puanlar',
-    ),
-    _NavItem(
-      icon: Icons.person_outline_rounded,
-      activeIcon: Icons.person_rounded,
-      label: 'Profil',
-    ),
+  static const _iconData = [
+    (Icons.home_outlined, Icons.home_rounded),
+    (Icons.menu_book_outlined, Icons.menu_book_rounded),
+    (Icons.add_circle_outline_rounded, Icons.add_circle_rounded),
+    (Icons.bar_chart_outlined, Icons.bar_chart_rounded),
+    (Icons.person_outline_rounded, Icons.person_rounded),
   ];
 
   /// Shared navigation logic — call from any screen's onItemSelected.
@@ -69,7 +52,9 @@ class AppBottomNavBar extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(appStringsProvider);
+    final labels = [s.navHome, s.navLibrary, s.navNew, s.navStats, s.navProfile];
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     return Container(
       height: AppDimensions.bottomNavHeight + bottomPadding,
@@ -82,8 +67,8 @@ class AppBottomNavBar extends StatelessWidget {
       child: Padding(
         padding: EdgeInsets.only(bottom: bottomPadding),
         child: Row(
-          children: List.generate(items.length, (index) {
-            final item = items[index];
+          children: List.generate(_iconData.length, (index) {
+            final (icon, activeIcon) = _iconData[index];
             final isSelected = index == selectedIndex;
             final isAddButton = index == 2;
 
@@ -117,7 +102,7 @@ class AppBottomNavBar extends StatelessWidget {
                       )
                     else
                       Icon(
-                        isSelected ? item.activeIcon : item.icon,
+                        isSelected ? activeIcon : icon,
                         color: isSelected
                             ? AppColors.primary
                             : AppColors.textSecondary,
@@ -126,7 +111,7 @@ class AppBottomNavBar extends StatelessWidget {
                     if (!isAddButton) ...[
                       const SizedBox(height: 3),
                       Text(
-                        item.label,
+                        labels[index],
                         style: AppTypography.labelSmall.copyWith(
                           color: isSelected
                               ? AppColors.primary
@@ -145,18 +130,6 @@ class AppBottomNavBar extends StatelessWidget {
       ),
     );
   }
-}
-
-class _NavItem {
-  const _NavItem({
-    required this.icon,
-    required this.activeIcon,
-    required this.label,
-  });
-
-  final IconData icon;
-  final IconData activeIcon;
-  final String label;
 }
 
 // ── Home Screen ───────────────────────────────────────────────────────────────
@@ -201,8 +174,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
+    return ThemedBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
         extendBody: true,
@@ -234,13 +206,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
 // ── Home Top Bar ──────────────────────────────────────────────────────────────
 
-class _HomeTopBar extends StatelessWidget {
+class _HomeTopBar extends ConsumerWidget {
   const _HomeTopBar({required this.onSearchTap});
 
   final VoidCallback onSearchTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(appStringsProvider);
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppDimensions.screenPaddingH,
@@ -257,7 +230,7 @@ class _HomeTopBar extends StatelessWidget {
           ),
           const SizedBox(width: AppDimensions.spaceSM),
           Text(
-            'Keşfet',
+            s.discover,
             style: AppTypography.headlineMedium.copyWith(
               color: AppColors.primary,
               fontWeight: FontWeight.w700,
@@ -290,7 +263,7 @@ class _HomeTopBar extends StatelessWidget {
 
 // ── Discovery Content (scrollable body) ──────────────────────────────────────
 
-class _DiscoveryContent extends StatelessWidget {
+class _DiscoveryContent extends ConsumerWidget {
   const _DiscoveryContent({
     required this.filters,
     required this.selectedFilter,
@@ -304,7 +277,8 @@ class _DiscoveryContent extends StatelessWidget {
   final ValueChanged<Book> onBookTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(appStringsProvider);
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     return ListView(
       padding: EdgeInsets.only(
@@ -329,21 +303,21 @@ class _DiscoveryContent extends StatelessWidget {
         ),
         const SizedBox(height: AppDimensions.spaceXL),
         _BookSection(
-          title: 'Haftanın Önerileri',
+          title: s.weeklyPicks,
           books: DummyBooks.haftaninOnerileri,
           onBookTap: onBookTap,
           onSeeAll: () {},
         ),
         const SizedBox(height: AppDimensions.spaceXL),
         _BookSection(
-          title: 'Karanlık Geçmiş',
+          title: s.darkPast,
           books: DummyBooks.karanlikGecmis,
           onBookTap: onBookTap,
           onSeeAll: () {},
         ),
         const SizedBox(height: AppDimensions.spaceXL),
         _BookSection(
-          title: 'Popüler Yazarlar',
+          title: s.popularAuthors,
           books: DummyBooks.popularYazarlar,
           onBookTap: onBookTap,
           onSeeAll: () {},

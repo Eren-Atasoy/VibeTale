@@ -7,8 +7,8 @@ import 'package:go_router/go_router.dart';
 import 'package:vibe_tale/core/constants/app_colors.dart';
 import 'package:vibe_tale/core/constants/app_dimensions.dart';
 import 'package:vibe_tale/core/constants/app_typography.dart';
-
 import 'package:vibe_tale/core/widgets/neon_button.dart';
+import 'package:vibe_tale/core/widgets/themed_background.dart';
 import 'package:vibe_tale/features/library/domain/book_model.dart';
 
 class BookDetailsScreen extends StatelessWidget {
@@ -356,8 +356,7 @@ class _NotFoundView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
+    return ThemedBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
