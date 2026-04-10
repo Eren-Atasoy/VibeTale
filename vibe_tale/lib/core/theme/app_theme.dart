@@ -127,4 +127,13 @@ abstract final class AppTheme {
       iconTheme: const IconThemeData(color: AppColors.textSecondary),
     );
   }
+
+  // static ThemeData  get light
+  // {
+  //   return ThemeData.light(useMaterial3: true).copyWith(
+  //     scaffoldBackgroundColor: AppColors.error,
+  //     colorScheme: const ColorScheme.light(
+        
+  //   );
+  // }
 }

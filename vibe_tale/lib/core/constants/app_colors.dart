@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 abstract final class AppColors {
   // ── Backgrounds ────────────────────────────────────────────────────────────
   /// Deepest background — matches gradient bottom
-  static const Color backgroundDeep = Color(0xFF030F12);
+  static const Color backgroundDeep = Color(0xFF0A1A1E);
 
   /// Primary surface — dark teal-green cards and containers
   static const Color backgroundSurface = Color(0xFF1A2E20);
@@ -51,19 +51,21 @@ abstract final class AppColors {
   static const Color success = Color(0xFF4CAF50);
 
   // ── Gradients ──────────────────────────────────────────────────────────────
-  /// Smooth cinematic dark gradient — 5 stops to eliminate banding.
-  /// #0B3B42 (teal top) → #030F12 (near-black bottom)
+  /// Smooth cinematic dark gradient — 7 stops for ultra-smooth transition.
+  /// Teal top → deep dark teal bottom (matches backgroundDeep)
   static const LinearGradient backgroundGradient = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
     colors: [
-      Color(0xFF0B3B42), // 0%   — teal top
-      Color(0xFF082C32), // 22%  — teal-dark
-      Color(0xFF061E24), // 45%  — mid transition
-      Color(0xFF041318), // 68%  — deep dark
-      Color(0xFF030F12), // 100% — near-black
+      Color(0xFF0E4550), // 0%   — vibrant teal
+      Color(0xFF0C3B44), // 12%  — teal
+      Color(0xFF0A3239), // 28%  — mid-teal
+      Color(0xFF082930), // 45%  — dark teal
+      Color(0xFF072127), // 62%  — deeper
+      Color(0xFF0B1D22), // 80%  — very dark teal
+      Color(0xFF0A1A1E), // 100% — matches backgroundDeep exactly
     ],
-    stops: [0.0, 0.22, 0.45, 0.68, 1.0],
+    stops: [0.0, 0.12, 0.28, 0.45, 0.62, 0.80, 1.0],
   );
 
   static const LinearGradient amberGradient = LinearGradient(

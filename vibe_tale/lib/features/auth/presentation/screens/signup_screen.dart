@@ -103,6 +103,7 @@ class _SignupScreenState extends State<SignupScreen> {
       decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
       child: Scaffold(
         backgroundColor: Colors.transparent,
+        extendBody: true,
         body: SafeArea(
           child: Column(
             children: [
