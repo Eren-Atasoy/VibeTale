@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:vibe_tale/core/constants/app_colors.dart';
 import 'package:vibe_tale/core/constants/app_dimensions.dart';
 import 'package:vibe_tale/core/constants/app_typography.dart';
+import 'package:vibe_tale/core/theme/app_theme_colors.dart';
 import 'package:vibe_tale/core/widgets/neon_button.dart';
 import 'package:vibe_tale/core/widgets/themed_background.dart';
 import 'package:vibe_tale/features/library/domain/book_model.dart';
@@ -250,7 +251,7 @@ class _DetailsPanel extends StatelessWidget {
           // CTA buttons
           NeonButton(
             label: 'OKUMAYA BAŞLA',
-            onPressed: () => context.push('/vibe-analysis/${book.id}'),
+            onPressed: () => context.push('/read/${book.id}'),
           ),
           const SizedBox(height: AppDimensions.spaceMD),
           NeonButton.outlined(
@@ -362,9 +363,9 @@ class _NotFoundView extends StatelessWidget {
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           leading: IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.arrow_back_rounded,
-              color: AppColors.textPrimary,
+              color: context.vColors.textPrimary,
             ),
             onPressed: () => context.pop(),
           ),
@@ -373,9 +374,9 @@ class _NotFoundView extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
+              Icon(
                 Icons.search_off_rounded,
-                color: AppColors.textSecondary,
+                color: context.vColors.textSecondary,
                 size: 48,
               ),
               const SizedBox(height: AppDimensions.spaceMD),

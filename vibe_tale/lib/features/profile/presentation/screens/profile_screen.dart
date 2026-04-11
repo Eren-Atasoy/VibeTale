@@ -4,6 +4,7 @@ import 'package:vibe_tale/core/constants/app_colors.dart';
 import 'package:vibe_tale/core/constants/app_dimensions.dart';
 import 'package:vibe_tale/core/constants/app_typography.dart';
 import 'package:vibe_tale/core/router/app_router.dart';
+import 'package:vibe_tale/core/theme/app_theme_colors.dart';
 import 'package:vibe_tale/core/widgets/glass_card.dart';
 import 'package:vibe_tale/core/widgets/themed_background.dart';
 import 'package:vibe_tale/features/home/presentation/screens/home_screen.dart';
@@ -63,6 +64,7 @@ class _ProfileTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.vColors;
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppDimensions.screenPaddingH,
@@ -90,12 +92,12 @@ class _ProfileTopBar extends StatelessWidget {
               height: 38,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.inputFill,
-                border: Border.all(color: AppColors.glassBorder, width: 1),
+                color: c.inputFill,
+                border: Border.all(color: c.glassBorder, width: 1),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.settings_outlined,
-                color: AppColors.textPrimary,
+                color: c.textPrimary,
                 size: 20,
               ),
             ),
@@ -115,6 +117,7 @@ class _ProfileHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.vColors;
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AppDimensions.screenPaddingH,
@@ -128,11 +131,7 @@ class _ProfileHeader extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(color: AppColors.primary, width: 2.5),
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFF1A3A40), Color(0xFF0E2A2E)],
-              ),
+              color: c.cardElevated,
             ),
             child: profile.avatarUrl != null
                 ? ClipOval(
@@ -163,7 +162,7 @@ class _ProfileHeader extends StatelessWidget {
             '${profile.memberSince} tarihinden beri üye',
             style: AppTypography.bodyMedium.copyWith(
               fontSize: 11,
-              color: AppColors.textHint,
+              color: c.textHint,
             ),
           ),
           const SizedBox(height: AppDimensions.spaceMD),
@@ -173,14 +172,14 @@ class _ProfileHeader extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               decoration: BoxDecoration(
-                color: AppColors.inputFill,
+                color: c.inputFill,
                 borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
-                border: Border.all(color: AppColors.glassBorder, width: 1),
+                border: Border.all(color: c.glassBorder, width: 1),
               ),
               child: Text(
                 'Profili Düzenle',
                 style: AppTypography.labelSmall.copyWith(
-                  color: AppColors.textSecondary,
+                  color: c.textSecondary,
                   fontSize: 12,
                   letterSpacing: 0.3,
                 ),
@@ -433,6 +432,7 @@ class _ReadingActivitySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.vColors;
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AppDimensions.screenPaddingH,
@@ -482,7 +482,7 @@ class _ReadingActivitySection extends StatelessWidget {
                               gradient: ratio > 0
                                   ? AppColors.amberGradient
                                   : null,
-                              color: ratio == 0 ? AppColors.glassBorder : null,
+                              color: ratio == 0 ? c.glassBorder : null,
                               borderRadius: BorderRadius.circular(4),
                               boxShadow: ratio > 0
                                   ? [
@@ -501,7 +501,7 @@ class _ReadingActivitySection extends StatelessWidget {
                               fontSize: 9,
                               color: isToday
                                   ? AppColors.primary
-                                  : AppColors.textSecondary,
+                                  : c.textSecondary,
                               fontWeight: isToday
                                   ? FontWeight.w700
                                   : FontWeight.w400,

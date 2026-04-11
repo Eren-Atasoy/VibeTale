@@ -3,7 +3,13 @@
     "allow": [
       "Bash(npm install:*)",
       "Bash(flutter:*)",
-      "Bash(dart analyze:*)"
+      "Bash(dart analyze:*)",
+      "Bash(git commit:*)",
+      "Bash(mkdir -p /d/Portfolio/VibeTale/.claude)",
+      "Bash(git -C /d/Portfolio/VibeTale rev-parse --short HEAD)",
+      "Bash(echo \"$\\(date +%Y-%m-%d-%H:%M\\) | phase0-phase1-step1 | $\\(git -C /d/Portfolio/VibeTale rev-parse --short HEAD\\)\")",
+      "Bash(dart format:*)",
+      "Bash(git add:*)"
     ]
   }
 }

@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:vibe_tale/core/constants/app_colors.dart';
 import 'package:vibe_tale/core/constants/app_dimensions.dart';
 import 'package:vibe_tale/core/constants/app_typography.dart';
+import 'package:vibe_tale/core/theme/app_theme_colors.dart';
 import 'package:vibe_tale/features/home/presentation/screens/home_screen.dart';
+import 'package:vibe_tale/core/widgets/themed_background.dart';
 
 // ── Dummy Leaderboard Data ────────────────────────────────────────────────────
 
@@ -180,8 +182,7 @@ class _ReadingStatsScreenState extends State<ReadingStatsScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
+    return ThemedBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
         extendBody: true,
@@ -252,10 +253,10 @@ class _TopBar extends StatelessWidget {
               // Period selector
               Container(
                 decoration: BoxDecoration(
-                  color: AppColors.inputFill,
+                  color: context.vColors.inputFill,
                   borderRadius:
                       BorderRadius.circular(AppDimensions.radiusPill),
-                  border: Border.all(color: AppColors.glassBorder),
+                  border: Border.all(color: context.vColors.glassBorder),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -311,7 +312,11 @@ class _PeriodChip extends StatelessWidget {
         child: Text(
           label,
           style: AppTypography.tagLabel.copyWith(
-            color: isSelected ? AppColors.backgroundDeep : AppColors.textSecondary,
+            color: isSelected
+                ? AppColors.backgroundDeep
+                : (context.isDark
+                    ? context.vColors.textSecondary
+                    : context.vColors.textPrimary.withValues(alpha: 0.7)),
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
             fontSize: 11,
           ),
@@ -370,7 +375,10 @@ class _LeaderboardBody extends StatelessWidget {
               const Spacer(),
               Text(
                 'Okunan Kitap',
-                style: AppTypography.bodyMedium.copyWith(fontSize: 11),
+                style: AppTypography.bodyMedium.copyWith(
+                  fontSize: 11,
+                  color: context.vColors.textSecondary,
+                ),
               ),
             ],
           ),
@@ -400,14 +408,16 @@ class _MyStatsCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(AppDimensions.spaceMD),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
+          gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF1A3540), Color(0xFF0F2530)],
+            colors: context.isDark
+                ? [const Color(0xFF1A3540), const Color(0xFF0F2530)]
+                : [Colors.white, const Color(0xFFF0F4F2)],
           ),
           borderRadius: BorderRadius.circular(AppDimensions.radiusLG),
           border: Border.all(
-            color: AppColors.primary.withValues(alpha: 0.35),
+            color: AppColors.primary.withValues(alpha: context.isDark ? 0.35 : 0.6),
             width: 1,
           ),
           boxShadow: [
@@ -431,7 +441,7 @@ class _MyStatsCard extends StatelessWidget {
                   Text(
                     'Benim Durumum',
                     style: AppTypography.labelSmall.copyWith(
-                      color: AppColors.textSecondary,
+                      color: context.vColors.textSecondary,
                       fontSize: 10,
                       letterSpacing: 1.2,
                     ),
@@ -446,7 +456,10 @@ class _MyStatsCard extends StatelessWidget {
                   ),
                   Text(
                     user.username,
-                    style: AppTypography.bodyMedium.copyWith(fontSize: 11),
+                    style: AppTypography.bodyMedium.copyWith(
+                      fontSize: 11,
+                      color: context.vColors.textSecondary,
+                    ),
                   ),
                 ],
               ),
@@ -520,7 +533,7 @@ class _Podium extends StatelessWidget {
                   decoration: BoxDecoration(
                     gradient: RadialGradient(
                       colors: [
-                        AppColors.primary.withValues(alpha: 0.20 * animation.value),
+                        AppColors.primary.withValues(alpha: (context.isDark ? 0.20 : 0.12) * animation.value),
                         Colors.transparent,
                       ],
                     ),
@@ -647,8 +660,8 @@ class _PodiumColumn extends StatelessWidget {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  color.withValues(alpha: 0.85),
-                  color.withValues(alpha: 0.55),
+                  color.withValues(alpha: context.isDark ? 0.85 : 0.70),
+                  color.withValues(alpha: context.isDark ? 0.55 : 0.40),
                 ],
               ),
               borderRadius: const BorderRadius.vertical(
@@ -695,12 +708,12 @@ class _RankRow extends StatelessWidget {
       decoration: BoxDecoration(
         color: isMe
             ? AppColors.primary.withValues(alpha: 0.10)
-            : AppColors.inputFill,
+            : context.vColors.cardElevated,
         borderRadius: BorderRadius.circular(AppDimensions.radiusMD),
         border: Border.all(
           color: isMe
               ? AppColors.primary.withValues(alpha: 0.35)
-              : AppColors.glassBorder,
+              : context.vColors.glassBorder,
           width: 0.8,
         ),
       ),
@@ -712,7 +725,7 @@ class _RankRow extends StatelessWidget {
             child: Text(
               '#${user.rank}',
               style: AppTypography.titleMedium.copyWith(
-                color: isMe ? AppColors.primary : AppColors.textSecondary,
+                color: isMe ? AppColors.primary : context.vColors.textSecondary,
                 fontWeight: FontWeight.w700,
                 fontSize: 13,
               ),
@@ -733,7 +746,7 @@ class _RankRow extends StatelessWidget {
                       style: AppTypography.titleMedium.copyWith(
                         fontWeight: isMe ? FontWeight.w700 : FontWeight.w500,
                         fontSize: 13,
-                        color: isMe ? AppColors.primary : AppColors.textPrimary,
+                        color: isMe ? AppColors.primary : context.vColors.textPrimary,
                       ),
                     ),
                     if (isMe) ...[
@@ -762,7 +775,10 @@ class _RankRow extends StatelessWidget {
                 ),
                 Text(
                   '🔥 ${user.readingStreak} gün • ${user.pagesRead} sayfa',
-                  style: AppTypography.bodyMedium.copyWith(fontSize: 10),
+                  style: AppTypography.bodyMedium.copyWith(
+                    fontSize: 10,
+                    color: context.vColors.textSecondary,
+                  ),
                 ),
               ],
             ),
@@ -774,7 +790,7 @@ class _RankRow extends StatelessWidget {
               Text(
                 '${user.booksRead}',
                 style: AppTypography.titleLarge.copyWith(
-                  color: isMe ? AppColors.primary : AppColors.textPrimary,
+                  color: isMe ? AppColors.primary : context.vColors.textPrimary,
                   fontWeight: FontWeight.w800,
                   fontSize: 18,
                 ),
@@ -782,7 +798,7 @@ class _RankRow extends StatelessWidget {
               Text(
                 'kitap',
                 style: AppTypography.labelSmall.copyWith(
-                  color: AppColors.textSecondary,
+                  color: context.vColors.textSecondary,
                   fontSize: 9,
                   letterSpacing: 0.3,
                 ),
@@ -830,7 +846,7 @@ class _Avatar extends StatelessWidget {
         color: bg,
         border: hasBorder
             ? Border.all(color: AppColors.primary, width: 2.5)
-            : Border.all(color: AppColors.glassBorder, width: 0.8),
+            : Border.all(color: context.vColors.glassBorder, width: 0.8),
         boxShadow: hasBorder
             ? [
                 BoxShadow(

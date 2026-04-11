@@ -3,18 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:vibe_tale/core/constants/app_colors.dart';
 import 'package:vibe_tale/core/constants/app_dimensions.dart';
 import 'package:vibe_tale/core/constants/app_typography.dart';
+import 'package:vibe_tale/core/theme/app_theme_colors.dart';
 
 /// Book cover card with amber glow shadow and optional "YENİ" badge.
-///
-/// Usage:
-/// ```dart
-/// BookCoverCard(
-///   imageUrl: book.coverUrl,
-///   title: book.title,
-///   onTap: () => context.push('/book/${book.id}'),
-///   isNew: true,
-/// )
-/// ```
 class BookCoverCard extends StatelessWidget {
   const BookCoverCard({
     super.key,
@@ -38,6 +29,7 @@ class BookCoverCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final height = width / AppDimensions.bookCoverAspectRatio;
+    final c = context.vColors;
 
     return GestureDetector(
       onTap: onTap,
@@ -49,12 +41,12 @@ class BookCoverCard extends StatelessWidget {
           children: [
             Stack(
               children: [
-                // Cover image with glow
                 Container(
                   width: width,
                   height: height,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(AppDimensions.radiusSM),
+                    borderRadius:
+                        BorderRadius.circular(AppDimensions.radiusSM),
                     boxShadow: showGlow
                         ? [
                             BoxShadow(
@@ -66,19 +58,20 @@ class BookCoverCard extends StatelessWidget {
                           ]
                         : [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.4),
+                              color: Colors.black.withValues(alpha: 0.25),
                               blurRadius: 8,
                               offset: const Offset(0, 4),
                             ),
                           ],
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(AppDimensions.radiusSM),
+                    borderRadius:
+                        BorderRadius.circular(AppDimensions.radiusSM),
                     child: CachedNetworkImage(
                       imageUrl: imageUrl,
                       fit: BoxFit.cover,
                       placeholder: (context, url) => Container(
-                        color: AppColors.backgroundElevated,
+                        color: c.cardElevated,
                         child: const Center(
                           child: CircularProgressIndicator(
                             color: AppColors.primary,
@@ -87,10 +80,10 @@ class BookCoverCard extends StatelessWidget {
                         ),
                       ),
                       errorWidget: (context, url, error) => Container(
-                        color: AppColors.backgroundElevated,
-                        child: const Icon(
+                        color: c.cardElevated,
+                        child: Icon(
                           Icons.book_outlined,
-                          color: AppColors.textSecondary,
+                          color: c.textSecondary,
                           size: 32,
                         ),
                       ),
@@ -98,7 +91,6 @@ class BookCoverCard extends StatelessWidget {
                   ),
                 ),
 
-                // "YENİ" badge
                 if (isNew)
                   Positioned(
                     top: AppDimensions.spaceSM,
@@ -132,7 +124,10 @@ class BookCoverCard extends StatelessWidget {
               const SizedBox(height: AppDimensions.spaceSM),
               Text(
                 title!,
-                style: AppTypography.titleMedium.copyWith(fontSize: 12),
+                style: AppTypography.titleMedium.copyWith(
+                  fontSize: 12,
+                  color: c.textPrimary,
+                ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -142,7 +137,10 @@ class BookCoverCard extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 subtitle!,
-                style: AppTypography.bodyMedium.copyWith(fontSize: 11),
+                style: AppTypography.bodyMedium.copyWith(
+                  fontSize: 11,
+                  color: c.textSecondary,
+                ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),

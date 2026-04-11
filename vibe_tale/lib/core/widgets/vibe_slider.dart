@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:vibe_tale/core/constants/app_colors.dart';
 import 'package:vibe_tale/core/constants/app_dimensions.dart';
 import 'package:vibe_tale/core/constants/app_typography.dart';
+import 'package:vibe_tale/core/theme/app_theme_colors.dart';
 
 /// Custom amber slider with icon row and percentage label.
 /// Matches the Ambiance Control bottom sheet in the mockup.
@@ -72,13 +73,13 @@ class VibeSlider extends StatelessWidget {
         Row(
           children: [
             if (leadingIcon != null)
-              Icon(leadingIcon, size: 18, color: AppColors.textSecondary),
+              Icon(leadingIcon, size: 18, color: context.vColors.textSecondary),
             Expanded(
               child: SliderTheme(
                 data: SliderTheme.of(context).copyWith(
                   trackHeight: 3,
                   activeTrackColor: AppColors.primary,
-                  inactiveTrackColor: AppColors.glassBorder,
+                  inactiveTrackColor: context.vColors.glassBorder,
                   thumbColor: AppColors.primary,
                   overlayColor: AppColors.primaryGlow,
                   thumbShape: const RoundSliderThumbShape(
@@ -97,7 +98,7 @@ class VibeSlider extends StatelessWidget {
               ),
             ),
             if (trailingIcon != null)
-              Icon(trailingIcon, size: 18, color: AppColors.textSecondary),
+              Icon(trailingIcon, size: 18, color: context.vColors.textSecondary),
           ],
         ),
       ],

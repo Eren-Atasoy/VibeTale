@@ -2,29 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:vibe_tale/core/constants/app_colors.dart';
 import 'package:vibe_tale/core/constants/app_dimensions.dart';
 import 'package:vibe_tale/core/constants/app_typography.dart';
+import 'package:vibe_tale/core/theme/app_theme_colors.dart';
 
-/// Glassmorphic dark input field matching the VibeTale mockup style.
-///
-/// Displays [errorText] below the field when non-null; clears automatically
-/// when the parent sets it back to null.
-///
-/// Usage:
-/// ```dart
-/// VibeTextField(
-///   controller: _emailController,
-///   hint: 'E-posta Adresi',
-///   suffixIcon: Icons.email_outlined,
-///   errorText: _emailError,
-///   onChanged: _validateEmail,
-/// )
-///
-/// VibeTextField.password(
-///   controller: _passController,
-///   hint: 'Şifre',
-///   errorText: _passwordError,
-///   onChanged: _validatePassword,
-/// )
-/// ```
+/// Glassmorphic input field that adapts to dark / light theme.
 class VibeTextField extends StatefulWidget {
   const VibeTextField({
     super.key,
@@ -67,9 +47,6 @@ class VibeTextField extends StatefulWidget {
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
   final String? label;
-
-  /// When non-null, shows a red error message directly below the field.
-  /// Set to null to clear the error.
   final String? errorText;
   final bool autofocus;
 
@@ -102,6 +79,8 @@ class _VibeTextFieldState extends State<VibeTextField> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.vColors;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -133,7 +112,7 @@ class _VibeTextFieldState extends State<VibeTextField> {
             onChanged: widget.onChanged,
             onSubmitted: widget.onSubmitted,
             autofocus: widget.autofocus,
-            style: AppTypography.bodyLarge,
+            style: AppTypography.bodyLarge.copyWith(color: c.textPrimary),
             cursorColor: AppColors.primary,
             decoration: InputDecoration(
               hintText: widget.hint,
@@ -147,7 +126,7 @@ class _VibeTextFieldState extends State<VibeTextField> {
                             ? Icons.visibility_off_outlined
                             : Icons.visibility_outlined,
                         size: 18,
-                        color: AppColors.textSecondary,
+                        color: c.textSecondary,
                       ),
                       onPressed: () => setState(() => _obscure = !_obscure),
                     )
@@ -155,12 +134,9 @@ class _VibeTextFieldState extends State<VibeTextField> {
                   ? Icon(
                       widget.suffixIcon,
                       size: 18,
-                      color: _hasError
-                          ? AppColors.error
-                          : AppColors.textSecondary,
+                      color: _hasError ? AppColors.error : c.textSecondary,
                     )
                   : null,
-              // Border handled by AnimatedContainer above
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppDimensions.radiusSM),
                 borderSide: BorderSide.none,
@@ -176,7 +152,6 @@ class _VibeTextFieldState extends State<VibeTextField> {
             ),
           ),
         ),
-        // Error message — animated in/out
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 200),
           transitionBuilder: (child, animation) => FadeTransition(

@@ -2,16 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:vibe_tale/core/constants/app_colors.dart';
 import 'package:vibe_tale/core/constants/app_dimensions.dart';
 import 'package:vibe_tale/core/constants/app_typography.dart';
+import 'package:vibe_tale/core/theme/app_theme_colors.dart';
 
 enum NeonButtonVariant { filled, outlined }
 
 /// Primary amber button with neon glow effect.
-///
-/// Usage:
-/// ```dart
-/// NeonButton(label: 'GİRİŞ YAP', onPressed: () {})
-/// NeonButton.outlined(label: 'Google', onPressed: () {}, icon: Icons.g_mobiledata)
-/// ```
 class NeonButton extends StatelessWidget {
   const NeonButton({
     super.key,
@@ -42,6 +37,7 @@ class NeonButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isFilled = variant == NeonButtonVariant.filled;
+    final c = context.vColors;
 
     return Container(
       width: width,
@@ -71,7 +67,7 @@ class NeonButton extends StatelessWidget {
               borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
               border: isFilled
                   ? null
-                  : Border.all(color: AppColors.glassBorder, width: 1.5),
+                  : Border.all(color: c.glassBorder, width: 1.5),
             ),
             child: Center(
               child: isLoading
@@ -82,7 +78,7 @@ class NeonButton extends StatelessWidget {
                         strokeWidth: 2.5,
                         color: isFilled
                             ? AppColors.backgroundDeep
-                            : AppColors.textPrimary,
+                            : c.textPrimary,
                       ),
                     )
                   : Row(
@@ -94,7 +90,7 @@ class NeonButton extends StatelessWidget {
                             size: 18,
                             color: isFilled
                                 ? AppColors.backgroundDeep
-                                : AppColors.textPrimary,
+                                : c.textPrimary,
                           ),
                           const SizedBox(width: AppDimensions.spaceSM),
                         ],
@@ -103,7 +99,7 @@ class NeonButton extends StatelessWidget {
                           style: isFilled
                               ? AppTypography.buttonLabel
                               : AppTypography.buttonLabel.copyWith(
-                                  color: AppColors.textPrimary,
+                                  color: c.textPrimary,
                                   fontWeight: FontWeight.w500,
                                 ),
                         ),

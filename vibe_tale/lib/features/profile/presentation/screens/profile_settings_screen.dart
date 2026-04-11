@@ -6,6 +6,7 @@ import 'package:vibe_tale/core/constants/app_dimensions.dart';
 import 'package:vibe_tale/core/constants/app_typography.dart';
 import 'package:vibe_tale/core/providers/app_settings_provider.dart';
 import 'package:vibe_tale/core/router/app_router.dart';
+import 'package:vibe_tale/core/theme/app_theme_colors.dart';
 import 'package:vibe_tale/core/widgets/glass_card.dart';
 import 'package:vibe_tale/core/widgets/themed_background.dart';
 
@@ -25,14 +26,19 @@ class _ProfileSettingsScreenState
 
   // ── Switch helper ─────────────────────────────────────────────────────────
 
-  Switch _buildSwitch(bool value, ValueChanged<bool> onChanged) {
+  Switch _buildSwitch(
+    BuildContext context,
+    bool value,
+    ValueChanged<bool> onChanged,
+  ) {
+    final c = context.vColors;
     return Switch(
       value: value,
       onChanged: onChanged,
       activeThumbColor: AppColors.primary,
       activeTrackColor: AppColors.primary.withValues(alpha: 0.3),
-      inactiveThumbColor: AppColors.textSecondary,
-      inactiveTrackColor: AppColors.glassBorder,
+      inactiveThumbColor: c.textSecondary,
+      inactiveTrackColor: c.glassBorder,
     );
   }
 
@@ -82,7 +88,7 @@ class _ProfileSettingsScreenState
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusSM),
-          side: const BorderSide(color: AppColors.glassBorder),
+          side: BorderSide(color: context.vColors.glassBorder),
         ),
         duration: const Duration(seconds: 2),
       ),
@@ -126,17 +132,17 @@ class _ProfileSettingsScreenState
           children: [
             _SheetOptionTile(
               label: 'Okuma Geçmişini Gizle',
-              trailing: _buildSwitch(false, (_) {}),
+              trailing: _buildSwitch(context, false, (_) {}),
               onTap: null,
             ),
             _SheetOptionTile(
               label: 'Profili Herkese Açık Göster',
-              trailing: _buildSwitch(true, (_) {}),
+              trailing: _buildSwitch(context, true, (_) {}),
               onTap: null,
             ),
             _SheetOptionTile(
               label: 'Başarımları Paylaş',
-              trailing: _buildSwitch(true, (_) {}),
+              trailing: _buildSwitch(context, true, (_) {}),
               onTap: null,
             ),
             const SizedBox(height: AppDimensions.spaceMD),
@@ -228,7 +234,7 @@ class _ProfileSettingsScreenState
             const SizedBox(height: 4),
             Text('Versiyon 1.0.0', style: AppTypography.bodyMedium),
             const SizedBox(height: AppDimensions.spaceMD),
-            const Divider(color: AppColors.glassBorder),
+            const Divider(),
             const SizedBox(height: AppDimensions.spaceSM),
             _InfoRow(label: 'Geliştirici', value: 'VibeTale Team'),
             _InfoRow(label: 'Lisans', value: 'MIT'),
@@ -244,10 +250,10 @@ class _ProfileSettingsScreenState
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF0F2A30),
+        backgroundColor: context.vColors.cardSurface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusLG),
-          side: const BorderSide(color: AppColors.glassBorder),
+          side: BorderSide(color: context.vColors.glassBorder),
         ),
         title: Text('Çıkış Yap', style: AppTypography.titleLarge),
         content: Text(
@@ -260,7 +266,7 @@ class _ProfileSettingsScreenState
             child: Text(
               'İptal',
               style: AppTypography.bodyMedium.copyWith(
-                color: AppColors.textSecondary,
+                color: context.vColors.textSecondary,
               ),
             ),
           ),
@@ -315,6 +321,7 @@ class _ProfileSettingsScreenState
                           icon: Icons.notifications_outlined,
                           label: 'Bildirimler',
                           trailing: _buildSwitch(
+                            context,
                             _notificationsOn,
                             (v) => setState(() => _notificationsOn = v),
                           ),
@@ -323,6 +330,7 @@ class _ProfileSettingsScreenState
                           icon: Icons.alarm_outlined,
                           label: 'Okuma Hatırlatıcısı',
                           trailing: _buildSwitch(
+                            context,
                             _readingReminder,
                             (v) => setState(() => _readingReminder = v),
                           ),
@@ -338,12 +346,13 @@ class _ProfileSettingsScreenState
                               Text(
                                 isDark ? 'Karanlık' : 'Aydınlık',
                                 style: AppTypography.bodyMedium.copyWith(
-                                  color: AppColors.textSecondary,
+                                  color: context.vColors.textSecondary,
                                   fontSize: 13,
                                 ),
                               ),
                               const SizedBox(width: 8),
                               _buildSwitch(
+                                context,
                                 isDark,
                                 (v) => ref
                                     .read(themeModeProvider.notifier)
@@ -363,14 +372,14 @@ class _ProfileSettingsScreenState
                               Text(
                                 langLabel,
                                 style: AppTypography.bodyMedium.copyWith(
-                                  color: AppColors.textSecondary,
+                                  color: context.vColors.textSecondary,
                                   fontSize: 13,
                                 ),
                               ),
                               const SizedBox(width: 6),
-                              const Icon(
+                              Icon(
                                 Icons.chevron_right_rounded,
-                                color: AppColors.textSecondary,
+                                color: context.vColors.textSecondary,
                                 size: 20,
                               ),
                             ],
@@ -389,9 +398,9 @@ class _ProfileSettingsScreenState
                         _SettingsTile(
                           icon: Icons.person_outline_rounded,
                           label: 'Hesap Bilgileri',
-                          trailing: const Icon(
+                          trailing: Icon(
                             Icons.chevron_right_rounded,
-                            color: AppColors.textSecondary,
+                            color: context.vColors.textSecondary,
                             size: 20,
                           ),
                           onTap: _showAccountSheet,
@@ -399,9 +408,9 @@ class _ProfileSettingsScreenState
                         _SettingsTile(
                           icon: Icons.lock_outline_rounded,
                           label: 'Gizlilik',
-                          trailing: const Icon(
+                          trailing: Icon(
                             Icons.chevron_right_rounded,
-                            color: AppColors.textSecondary,
+                            color: context.vColors.textSecondary,
                             size: 20,
                           ),
                           onTap: _showPrivacySheet,
@@ -409,9 +418,9 @@ class _ProfileSettingsScreenState
                         _SettingsTile(
                           icon: Icons.help_outline_rounded,
                           label: 'Yardım & Destek',
-                          trailing: const Icon(
+                          trailing: Icon(
                             Icons.chevron_right_rounded,
-                            color: AppColors.textSecondary,
+                            color: context.vColors.textSecondary,
                             size: 20,
                           ),
                           onTap: _showHelpSheet,
@@ -425,14 +434,14 @@ class _ProfileSettingsScreenState
                               Text(
                                 'v1.0.0',
                                 style: AppTypography.bodyMedium.copyWith(
-                                  color: AppColors.textSecondary,
+                                  color: context.vColors.textSecondary,
                                   fontSize: 13,
                                 ),
                               ),
                               const SizedBox(width: 6),
-                              const Icon(
+                              Icon(
                                 Icons.chevron_right_rounded,
-                                color: AppColors.textSecondary,
+                                color: context.vColors.textSecondary,
                                 size: 20,
                               ),
                             ],
@@ -464,6 +473,7 @@ class _SettingsTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.vColors;
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppDimensions.spaceMD,
@@ -480,12 +490,12 @@ class _SettingsTopBar extends StatelessWidget {
               height: 38,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.inputFill,
-                border: Border.all(color: AppColors.glassBorder, width: 1),
+                color: c.inputFill,
+                border: Border.all(color: c.glassBorder, width: 1),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.arrow_back_rounded,
-                color: AppColors.textPrimary,
+                color: c.textPrimary,
                 size: 20,
               ),
             ),
@@ -515,6 +525,7 @@ class _SettingsGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.vColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -523,7 +534,7 @@ class _SettingsGroup extends StatelessWidget {
           child: Text(
             title,
             style: AppTypography.labelSmall.copyWith(
-              color: AppColors.textSecondary,
+              color: c.textSecondary,
               letterSpacing: 1.5,
               fontSize: 11,
             ),
@@ -536,9 +547,9 @@ class _SettingsGroup extends StatelessWidget {
               for (int i = 0; i < tiles.length; i++) ...[
                 tiles[i],
                 if (i < tiles.length - 1)
-                  const Divider(
+                  Divider(
                     height: 1,
-                    color: AppColors.glassBorder,
+                    color: c.glassBorder,
                     indent: 52,
                   ),
               ],
@@ -567,6 +578,7 @@ class _SettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.vColors;
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -591,7 +603,7 @@ class _SettingsTile extends StatelessWidget {
               child: Text(
                 label,
                 style: AppTypography.bodyMedium.copyWith(
-                  color: AppColors.textPrimary,
+                  color: c.textPrimary,
                   fontSize: 14,
                 ),
               ),
@@ -615,16 +627,17 @@ class _BottomSheetContainer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final c = context.vColors;
     return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF0F2A30),
-        borderRadius: BorderRadius.vertical(
+      decoration: BoxDecoration(
+        color: c.cardSurface,
+        borderRadius: const BorderRadius.vertical(
           top: Radius.circular(AppDimensions.radiusLG),
         ),
         border: Border(
-          top: BorderSide(color: AppColors.glassBorder, width: 1),
-          left: BorderSide(color: AppColors.glassBorder, width: 0.5),
-          right: BorderSide(color: AppColors.glassBorder, width: 0.5),
+          top: BorderSide(color: c.glassBorder, width: 1),
+          left: BorderSide(color: c.glassBorder, width: 0.5),
+          right: BorderSide(color: c.glassBorder, width: 0.5),
         ),
       ),
       child: Column(
@@ -636,7 +649,7 @@ class _BottomSheetContainer extends StatelessWidget {
             height: 4,
             margin: const EdgeInsets.only(top: 12, bottom: 8),
             decoration: BoxDecoration(
-              color: AppColors.glassBorder,
+              color: c.glassBorder,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -655,7 +668,7 @@ class _BottomSheetContainer extends StatelessWidget {
               ),
             ),
           ),
-          const Divider(height: 1, color: AppColors.glassBorder),
+          Divider(height: 1, color: c.glassBorder),
           Padding(
             padding: EdgeInsets.fromLTRB(
               AppDimensions.screenPaddingH,
@@ -707,7 +720,7 @@ class _SheetOptionTile extends StatelessWidget {
                 style: AppTypography.bodyMedium.copyWith(
                   color: isSelected
                       ? AppColors.primary
-                      : AppColors.textPrimary,
+                      : context.vColors.textPrimary,
                   fontWeight:
                       isSelected ? FontWeight.w600 : FontWeight.w400,
                   fontSize: 14,
@@ -739,6 +752,7 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.vColors;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
@@ -747,14 +761,14 @@ class _InfoRow extends StatelessWidget {
           Text(
             label,
             style: AppTypography.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
+              color: c.textSecondary,
               fontSize: 13,
             ),
           ),
           Text(
             value,
             style: AppTypography.bodyMedium.copyWith(
-              color: AppColors.textPrimary,
+              color: c.textPrimary,
               fontSize: 13,
               fontWeight: FontWeight.w500,
             ),

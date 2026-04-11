@@ -6,6 +6,7 @@ import 'package:vibe_tale/core/constants/app_colors.dart';
 import 'package:vibe_tale/core/constants/app_dimensions.dart';
 import 'package:vibe_tale/core/constants/app_typography.dart';
 import 'package:vibe_tale/core/providers/app_settings_provider.dart';
+import 'package:vibe_tale/core/theme/app_theme_colors.dart';
 import 'package:vibe_tale/core/widgets/book_cover_card.dart';
 import 'package:vibe_tale/core/widgets/themed_background.dart';
 import 'package:vibe_tale/features/home/presentation/screens/home_screen.dart';
@@ -88,6 +89,7 @@ class _LibraryTopBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.watch(appStringsProvider);
+    final c = context.vColors;
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppDimensions.screenPaddingH,
@@ -116,14 +118,14 @@ class _LibraryTopBar extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
             decoration: BoxDecoration(
-              color: AppColors.inputFill,
+              color: c.inputFill,
               borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
-              border: Border.all(color: AppColors.glassBorder),
+              border: Border.all(color: c.glassBorder),
             ),
             child: Text(
               '${DummyBooks.currentlyReading.length + DummyBooks.completed.length + DummyBooks.saved.length} ${ref.watch(appStringsProvider).books}',
               style: AppTypography.tagLabel.copyWith(
-                color: AppColors.textSecondary,
+                color: c.textSecondary,
                 fontSize: 11,
               ),
             ),
@@ -144,6 +146,7 @@ class _LibraryTabBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.watch(appStringsProvider);
+    final c = context.vColors;
     return TabBar(
       controller: controller,
       isScrollable: true,
@@ -155,7 +158,7 @@ class _LibraryTabBar extends ConsumerWidget {
       indicatorWeight: 2.5,
       indicatorSize: TabBarIndicatorSize.label,
       labelColor: AppColors.primary,
-      unselectedLabelColor: AppColors.textSecondary,
+      unselectedLabelColor: c.textSecondary,
       labelStyle: AppTypography.titleMedium.copyWith(
         fontWeight: FontWeight.w600,
         fontSize: 14,
@@ -165,7 +168,7 @@ class _LibraryTabBar extends ConsumerWidget {
         fontWeight: FontWeight.w400,
         fontSize: 14,
       ),
-      dividerColor: AppColors.glassBorder,
+      dividerColor: c.glassBorder,
       tabs: [
         Tab(text: s.tabReading),
         Tab(text: s.tabCompleted),
@@ -220,14 +223,15 @@ class _ReadingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.vColors;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(AppDimensions.spaceMD),
         decoration: BoxDecoration(
-          color: AppColors.inputFill,
+          color: c.inputFill,
           borderRadius: BorderRadius.circular(AppDimensions.radiusMD),
-          border: Border.all(color: AppColors.glassBorder, width: 0.8),
+          border: Border.all(color: c.glassBorder, width: 0.8),
         ),
         child: Row(
           children: [
@@ -258,7 +262,7 @@ class _ReadingCard extends StatelessWidget {
                     book.genre,
                     style: AppTypography.bodyMedium.copyWith(
                       fontSize: 11,
-                      color: AppColors.textHint,
+                      color: c.textHint,
                     ),
                   ),
                   const SizedBox(height: AppDimensions.spaceMD),
@@ -268,7 +272,7 @@ class _ReadingCard extends StatelessWidget {
                       Container(
                         height: 4,
                         decoration: BoxDecoration(
-                          color: AppColors.glassBorder,
+                          color: c.glassBorder,
                           borderRadius: BorderRadius.circular(
                             AppDimensions.radiusPill,
                           ),
@@ -403,7 +407,7 @@ class _GridBookCard extends StatelessWidget {
                 fit: BoxFit.cover,
                 width: double.infinity,
                 placeholder: (_, __) => Container(
-                  color: AppColors.backgroundElevated,
+                  color: context.vColors.cardElevated,
                   child: const Center(
                     child: CircularProgressIndicator(
                       color: AppColors.primary,
@@ -412,10 +416,10 @@ class _GridBookCard extends StatelessWidget {
                   ),
                 ),
                 errorWidget: (_, __, ___) => Container(
-                  color: AppColors.backgroundElevated,
-                  child: const Icon(
+                  color: context.vColors.cardElevated,
+                  child: Icon(
                     Icons.book_outlined,
-                    color: AppColors.textSecondary,
+                    color: context.vColors.textSecondary,
                     size: 28,
                   ),
                 ),
@@ -488,14 +492,15 @@ class _SavedCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.vColors;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(AppDimensions.spaceMD),
         decoration: BoxDecoration(
-          color: AppColors.inputFill,
+          color: c.inputFill,
           borderRadius: BorderRadius.circular(AppDimensions.radiusMD),
-          border: Border.all(color: AppColors.glassBorder, width: 0.8),
+          border: Border.all(color: c.glassBorder, width: 0.8),
         ),
         child: Row(
           children: [
@@ -524,7 +529,7 @@ class _SavedCard extends StatelessWidget {
                     book.genre,
                     style: AppTypography.bodyMedium.copyWith(
                       fontSize: 11,
-                      color: AppColors.textHint,
+                      color: c.textHint,
                     ),
                   ),
                 ],
@@ -558,6 +563,7 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.vColors;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppDimensions.spaceXXL),
@@ -568,11 +574,11 @@ class _EmptyState extends StatelessWidget {
               width: 72,
               height: 72,
               decoration: BoxDecoration(
-                color: AppColors.inputFill,
+                color: c.inputFill,
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.glassBorder),
+                border: Border.all(color: c.glassBorder),
               ),
-              child: Icon(icon, color: AppColors.textSecondary, size: 34),
+              child: Icon(icon, color: c.textSecondary, size: 34),
             ),
             const SizedBox(height: AppDimensions.spaceMD),
             Text(

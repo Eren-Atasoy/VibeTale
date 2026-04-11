@@ -4,6 +4,7 @@ import 'package:vibe_tale/core/constants/app_colors.dart';
 import 'package:vibe_tale/core/constants/app_dimensions.dart';
 import 'package:vibe_tale/core/constants/app_typography.dart';
 import 'package:vibe_tale/core/router/app_router.dart';
+import 'package:vibe_tale/core/theme/app_theme_colors.dart';
 import 'package:vibe_tale/core/widgets/neon_button.dart';
 import 'package:vibe_tale/core/widgets/themed_background.dart';
 import 'package:vibe_tale/core/widgets/vibe_text_field.dart';
@@ -163,9 +164,9 @@ class _TopBar extends StatelessWidget {
         children: [
           GestureDetector(
             onTap: () => context.pop(),
-            child: const Icon(
+            child: Icon(
               Icons.arrow_back,
-              color: AppColors.textPrimary,
+              color: context.vColors.textPrimary,
               size: 22,
             ),
           ),
@@ -197,8 +198,8 @@ class _PageIndicator extends StatelessWidget {
           Container(
             width: 6,
             height: 6,
-            decoration: const BoxDecoration(
-              color: AppColors.glassBorder,
+            decoration: BoxDecoration(
+              color: context.vColors.glassBorder,
               shape: BoxShape.circle,
             ),
           ),
@@ -219,7 +220,9 @@ class _HeadingSection extends StatelessWidget {
       children: [
         RichText(
           text: TextSpan(
-            style: AppTypography.displayMedium,
+            style: AppTypography.displayMedium.copyWith(
+              color: context.vColors.textPrimary,
+            ),
             children: [
               const TextSpan(text: 'Hikayeni '),
               TextSpan(
@@ -235,7 +238,9 @@ class _HeadingSection extends StatelessWidget {
         const SizedBox(height: AppDimensions.spaceSM),
         Text(
           'Kütüphaneni düzenlememize izin ver.\nKişiselleştirmeye başlamak için bilgilerini gir.',
-          style: AppTypography.bodyMedium,
+          style: AppTypography.bodyMedium.copyWith(
+            color: context.vColors.textSecondary,
+          ),
         ),
       ],
     );
@@ -367,14 +372,14 @@ class _SocialOutlineButton extends StatelessWidget {
       child: OutlinedButton.icon(
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
-          backgroundColor: AppColors.inputFill,
-          foregroundColor: AppColors.textPrimary,
-          side: const BorderSide(color: AppColors.glassBorder, width: 1),
+          backgroundColor: context.vColors.inputFill,
+          foregroundColor: context.vColors.textPrimary,
+          side: BorderSide(color: context.vColors.glassBorder, width: 1),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppDimensions.radiusSM),
           ),
         ),
-        icon: Icon(icon, size: 20, color: AppColors.textPrimary),
+        icon: Icon(icon, size: 20, color: context.vColors.textPrimary),
         label: Text(label, style: AppTypography.titleMedium),
       ),
     );
@@ -391,7 +396,9 @@ class _FooterLink extends StatelessWidget {
         onTap: () => context.pop(),
         child: RichText(
           text: TextSpan(
-            style: AppTypography.bodyMedium,
+            style: AppTypography.bodyMedium.copyWith(
+              color: context.vColors.textSecondary,
+            ),
             children: [
               const TextSpan(text: 'Zaten üye misin? '),
               TextSpan(
@@ -420,14 +427,19 @@ class _DividerWithText extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Expanded(child: Container(height: 0.5, color: AppColors.glassBorder)),
+        Expanded(child: Container(height: 0.5, color: context.vColors.glassBorder)),
         Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: AppDimensions.spaceMD,
           ),
-          child: Text(label, style: AppTypography.labelSmall),
+          child: Text(
+            label,
+            style: AppTypography.labelSmall.copyWith(
+              color: context.vColors.textSecondary,
+            ),
+          ),
         ),
-        Expanded(child: Container(height: 0.5, color: AppColors.glassBorder)),
+        Expanded(child: Container(height: 0.5, color: context.vColors.glassBorder)),
       ],
     );
   }

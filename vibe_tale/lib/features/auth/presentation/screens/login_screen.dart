@@ -5,6 +5,7 @@ import 'package:vibe_tale/core/constants/app_colors.dart';
 import 'package:vibe_tale/core/constants/app_dimensions.dart';
 import 'package:vibe_tale/core/constants/app_typography.dart';
 import 'package:vibe_tale/core/router/app_router.dart';
+import 'package:vibe_tale/core/theme/app_theme_colors.dart';
 import 'package:vibe_tale/core/widgets/neon_button.dart';
 import 'package:vibe_tale/core/widgets/themed_background.dart';
 import 'package:vibe_tale/core/widgets/vibe_text_field.dart';
@@ -146,9 +147,19 @@ class _LogoSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text('VibeTale', style: AppTypography.displayLarge),
+        Text(
+          'VibeTale',
+          style: AppTypography.displayLarge.copyWith(
+            color: context.vColors.textPrimary,
+          ),
+        ),
         const SizedBox(height: AppDimensions.spaceSM),
-        Text('SÜRÜKLEYİCİ KÜTÜPHANENİZ', style: AppTypography.tagline),
+        Text(
+          'SÜRÜKLEYİCİ KÜTÜPHANENİZ',
+          style: AppTypography.tagline.copyWith(
+            color: context.vColors.textSecondary,
+          ),
+        ),
       ],
     );
   }
@@ -182,11 +193,18 @@ class _FormSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text('Yolculuğuna Başla', style: AppTypography.displayMedium),
+        Text(
+          'Yolculuğuna Başla',
+          style: AppTypography.displayMedium.copyWith(
+            color: context.vColors.textPrimary,
+          ),
+        ),
         const SizedBox(height: AppDimensions.spaceSM),
         Text(
           'Devam etmek için bilgilerini gir.',
-          style: AppTypography.bodyMedium,
+          style: AppTypography.bodyMedium.copyWith(
+            color: context.vColors.textSecondary,
+          ),
         ),
         const SizedBox(height: AppDimensions.spaceXL),
         VibeTextField(
@@ -222,6 +240,7 @@ class _FormSection extends StatelessWidget {
 class _SocialSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final c = context.vColors;
     return Column(
       children: [
         const _DividerWithText(label: 'VEYA ŞUNUNLA DEVAM ET'),
@@ -232,13 +251,13 @@ class _SocialSection extends StatelessWidget {
               width: 52,
               height: 52,
               decoration: BoxDecoration(
-                color: AppColors.inputFill,
+                color: c.inputFill,
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.glassBorder, width: 1),
+                border: Border.all(color: c.glassBorder, width: 1),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.face_outlined,
-                color: AppColors.textSecondary,
+                color: c.textSecondary,
                 size: 22,
               ),
             ),
@@ -266,14 +285,21 @@ class _FooterLinks extends StatelessWidget {
       children: [
         GestureDetector(
           onTap: () {},
-          child: Text('Şifremi Unuttum?', style: AppTypography.bodyMedium),
+          child: Text(
+            'Şifremi Unuttum?',
+            style: AppTypography.bodyMedium.copyWith(
+              color: context.vColors.textSecondary,
+            ),
+          ),
         ),
         const SizedBox(height: AppDimensions.spaceMD),
         GestureDetector(
           onTap: () => context.push(AppRoutes.signup),
           child: RichText(
             text: TextSpan(
-              style: AppTypography.bodyMedium,
+              style: AppTypography.bodyMedium.copyWith(
+                color: context.vColors.textSecondary,
+              ),
               children: [
                 const TextSpan(text: 'Yeni misin? '),
                 TextSpan(
@@ -303,14 +329,19 @@ class _DividerWithText extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Expanded(child: Container(height: 0.5, color: AppColors.glassBorder)),
+        Expanded(child: Container(height: 0.5, color: context.vColors.glassBorder)),
         Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: AppDimensions.spaceMD,
           ),
-          child: Text(label, style: AppTypography.labelSmall),
+          child: Text(
+            label,
+            style: AppTypography.labelSmall.copyWith(
+              color: context.vColors.textSecondary,
+            ),
+          ),
         ),
-        Expanded(child: Container(height: 0.5, color: AppColors.glassBorder)),
+        Expanded(child: Container(height: 0.5, color: context.vColors.glassBorder)),
       ],
     );
   }

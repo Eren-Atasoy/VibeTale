@@ -7,6 +7,7 @@ import 'package:vibe_tale/core/constants/app_typography.dart';
 import 'package:vibe_tale/core/providers/app_settings_provider.dart';
 import 'package:vibe_tale/core/router/app_router.dart';
 import 'package:vibe_tale/core/widgets/book_cover_card.dart';
+import 'package:vibe_tale/core/theme/app_theme_colors.dart';
 import 'package:vibe_tale/core/widgets/themed_background.dart';
 import 'package:vibe_tale/features/library/domain/book_model.dart';
 
@@ -56,12 +57,14 @@ class AppBottomNavBar extends ConsumerWidget {
     final s = ref.watch(appStringsProvider);
     final labels = [s.navHome, s.navLibrary, s.navNew, s.navStats, s.navProfile];
     final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final c = context.vColors;
+
     return Container(
       height: AppDimensions.bottomNavHeight + bottomPadding,
       decoration: BoxDecoration(
-        color: AppColors.backgroundDeep.withValues(alpha: 0.97),
-        border: const Border(
-          top: BorderSide(color: AppColors.glassBorder, width: 0.5),
+        color: c.navBg,
+        border: Border(
+          top: BorderSide(color: c.glassBorder, width: 0.5),
         ),
       ),
       child: Padding(
@@ -103,9 +106,7 @@ class AppBottomNavBar extends ConsumerWidget {
                     else
                       Icon(
                         isSelected ? activeIcon : icon,
-                        color: isSelected
-                            ? AppColors.primary
-                            : AppColors.textSecondary,
+                        color: isSelected ? AppColors.primary : c.textSecondary,
                         size: 24,
                       ),
                     if (!isAddButton) ...[
@@ -113,9 +114,7 @@ class AppBottomNavBar extends ConsumerWidget {
                       Text(
                         labels[index],
                         style: AppTypography.labelSmall.copyWith(
-                          color: isSelected
-                              ? AppColors.primary
-                              : AppColors.textSecondary,
+                          color: isSelected ? AppColors.primary : c.textSecondary,
                           fontSize: 10,
                           letterSpacing: 0.3,
                         ),
@@ -240,19 +239,24 @@ class _HomeTopBar extends ConsumerWidget {
           const Spacer(),
           GestureDetector(
             onTap: onSearchTap,
-            child: Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.inputFill,
-                border: Border.all(color: AppColors.glassBorder, width: 1),
-              ),
-              child: const Icon(
-                Icons.search_rounded,
-                color: AppColors.textPrimary,
-                size: 20,
-              ),
+            child: Builder(
+              builder: (ctx) {
+                final c = ctx.vColors;
+                return Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: c.inputFill,
+                    border: Border.all(color: c.glassBorder, width: 1),
+                  ),
+                  child: Icon(
+                    Icons.search_rounded,
+                    color: c.textPrimary,
+                    size: 20,
+                  ),
+                );
+              },
             ),
           ),
         ],
@@ -354,6 +358,7 @@ class _FilterChipsRow extends StatelessWidget {
             const SizedBox(width: AppDimensions.spaceSM),
         itemBuilder: (context, index) {
           final isSelected = index == selectedIndex;
+          final c = context.vColors;
           return GestureDetector(
             onTap: () => onChanged(index),
             child: AnimatedContainer(
@@ -363,16 +368,14 @@ class _FilterChipsRow extends StatelessWidget {
                 color: Colors.transparent,
                 borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
                 border: Border.all(
-                  color: isSelected ? AppColors.primary : AppColors.glassBorder,
+                  color: isSelected ? AppColors.primary : c.glassBorder,
                   width: isSelected ? 1.5 : 1,
                 ),
               ),
               child: Text(
                 filters[index],
                 style: AppTypography.tagLabel.copyWith(
-                  color: isSelected
-                      ? AppColors.primary
-                      : AppColors.textSecondary,
+                  color: isSelected ? AppColors.primary : c.textSecondary,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                   fontSize: 12,
                 ),
@@ -661,6 +664,7 @@ class _HomeSearchDialogState extends State<HomeSearchDialog> {
   @override
   Widget build(BuildContext context) {
     final results = _results;
+    final c = context.vColors;
     return Align(
       alignment: Alignment.topCenter,
       child: Material(
@@ -676,9 +680,9 @@ class _HomeSearchDialogState extends State<HomeSearchDialog> {
             maxHeight: MediaQuery.of(context).size.height * 0.75,
           ),
           decoration: BoxDecoration(
-            color: const Color(0xFF0F2A30),
+            color: c.cardSurface,
             borderRadius: BorderRadius.circular(AppDimensions.radiusLG),
-            border: Border.all(color: AppColors.glassBorder),
+            border: Border.all(color: c.glassBorder),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.5),
@@ -694,9 +698,9 @@ class _HomeSearchDialogState extends State<HomeSearchDialog> {
                 padding: const EdgeInsets.fromLTRB(16, 14, 8, 14),
                 child: Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.search_rounded,
-                      color: AppColors.textSecondary,
+                      color: c.textSecondary,
                       size: 22,
                     ),
                     const SizedBox(width: 10),
@@ -705,7 +709,7 @@ class _HomeSearchDialogState extends State<HomeSearchDialog> {
                         controller: _controller,
                         focusNode: _focusNode,
                         style: AppTypography.bodyLarge.copyWith(
-                          color: AppColors.textPrimary,
+                          color: c.textPrimary,
                           fontSize: 15,
                         ),
                         cursorColor: AppColors.primary,
@@ -727,11 +731,11 @@ class _HomeSearchDialogState extends State<HomeSearchDialog> {
                           _controller.clear();
                           setState(() => _query = '');
                         },
-                        child: const Padding(
-                          padding: EdgeInsets.all(8),
+                        child: Padding(
+                          padding: const EdgeInsets.all(8),
                           child: Icon(
                             Icons.close_rounded,
-                            color: AppColors.textSecondary,
+                            color: c.textSecondary,
                             size: 20,
                           ),
                         ),
@@ -750,15 +754,15 @@ class _HomeSearchDialogState extends State<HomeSearchDialog> {
                   ],
                 ),
               ),
-              const Divider(color: AppColors.glassBorder, height: 1),
+              Divider(color: c.glassBorder, height: 1),
               if (_query.isEmpty)
                 Padding(
                   padding: const EdgeInsets.all(24),
                   child: Column(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.search_rounded,
-                        color: AppColors.textSecondary,
+                        color: c.textSecondary,
                         size: 36,
                       ),
                       const SizedBox(height: 10),
@@ -774,9 +778,9 @@ class _HomeSearchDialogState extends State<HomeSearchDialog> {
                   padding: const EdgeInsets.all(24),
                   child: Column(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.search_off_rounded,
-                        color: AppColors.textSecondary,
+                        color: c.textSecondary,
                         size: 36,
                       ),
                       const SizedBox(height: 10),
@@ -794,8 +798,8 @@ class _HomeSearchDialogState extends State<HomeSearchDialog> {
                     shrinkWrap: true,
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     itemCount: results.length,
-                    separatorBuilder: (_, _) => const Divider(
-                      color: AppColors.glassBorder,
+                    separatorBuilder: (_, _) => Divider(
+                      color: c.glassBorder,
                       height: 1,
                       indent: 72,
                     ),
@@ -815,10 +819,10 @@ class _HomeSearchDialogState extends State<HomeSearchDialog> {
                               book.coverUrl,
                               fit: BoxFit.cover,
                               errorBuilder: (_, _, _) => Container(
-                                color: AppColors.backgroundElevated,
-                                child: const Icon(
+                                color: c.cardElevated,
+                                child: Icon(
                                   Icons.book_outlined,
-                                  color: AppColors.textSecondary,
+                                  color: c.textSecondary,
                                   size: 20,
                                 ),
                               ),

@@ -1,17 +1,10 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:vibe_tale/core/constants/app_colors.dart';
 import 'package:vibe_tale/core/constants/app_dimensions.dart';
+import 'package:vibe_tale/core/theme/app_theme_colors.dart';
 
-/// A glassmorphism card using [BackdropFilter] and a semi-transparent surface.
-///
-/// Usage:
-/// ```dart
-/// GlassCard(
-///   child: Text('Hello'),
-/// )
-/// ```
+/// A glassmorphism card that adapts fill and border to the current theme.
 class GlassCard extends StatelessWidget {
   const GlassCard({
     super.key,
@@ -36,6 +29,7 @@ class GlassCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.vColors;
     final radius =
         borderRadius ?? BorderRadius.circular(AppDimensions.radiusLG);
 
@@ -48,10 +42,10 @@ class GlassCard extends StatelessWidget {
           height: height,
           padding: padding ?? const EdgeInsets.all(AppDimensions.spaceMD),
           decoration: BoxDecoration(
-            color: fillColor ?? AppColors.glassFill,
+            color: fillColor ?? c.glassFill,
             borderRadius: radius,
             border: Border.all(
-              color: borderColor ?? AppColors.glassBorder,
+              color: borderColor ?? c.glassBorder,
               width: 1.0,
             ),
           ),
