@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:vibe_tale/core/constants/app_colors.dart';
 import 'package:vibe_tale/core/constants/app_dimensions.dart';
 import 'package:vibe_tale/core/constants/app_typography.dart';
+import 'package:vibe_tale/core/providers/app_settings_provider.dart';
 import 'package:vibe_tale/core/router/app_router.dart';
 import 'package:vibe_tale/core/theme/app_theme_colors.dart';
 import 'package:vibe_tale/core/widgets/glass_card.dart';
@@ -10,11 +12,11 @@ import 'package:vibe_tale/core/widgets/themed_background.dart';
 import 'package:vibe_tale/features/home/presentation/screens/home_screen.dart';
 import 'package:vibe_tale/features/profile/domain/models/user_profile.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final profile = DummyProfile.current;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
@@ -59,11 +61,12 @@ class ProfileScreen extends StatelessWidget {
 
 // ── Profile Top Bar ───────────────────────────────────────────────────────────
 
-class _ProfileTopBar extends StatelessWidget {
+class _ProfileTopBar extends ConsumerWidget {
   const _ProfileTopBar();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(appStringsProvider);
     final c = context.vColors;
     return Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -77,7 +80,7 @@ class _ProfileTopBar extends StatelessWidget {
           const Icon(Icons.person_rounded, color: AppColors.primary, size: 28),
           const SizedBox(width: AppDimensions.spaceSM),
           Text(
-            'Profilim',
+            s.myProfile,
             style: AppTypography.headlineMedium.copyWith(
               color: AppColors.primary,
               fontWeight: FontWeight.w700,
@@ -110,13 +113,14 @@ class _ProfileTopBar extends StatelessWidget {
 
 // ── Profile Header ────────────────────────────────────────────────────────────
 
-class _ProfileHeader extends StatelessWidget {
+class _ProfileHeader extends ConsumerWidget {
   const _ProfileHeader({required this.profile});
 
   final UserProfile profile;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(appStringsProvider);
     final c = context.vColors;
     return Padding(
       padding: const EdgeInsets.symmetric(
@@ -159,7 +163,7 @@ class _ProfileHeader extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            '${profile.memberSince} tarihinden beri üye',
+            '${profile.memberSince} ${s.memberSince}',
             style: AppTypography.bodyMedium.copyWith(
               fontSize: 11,
               color: c.textHint,
@@ -177,7 +181,7 @@ class _ProfileHeader extends StatelessWidget {
                 border: Border.all(color: c.glassBorder, width: 1),
               ),
               child: Text(
-                'Profili Düzenle',
+                s.editProfile,
                 style: AppTypography.labelSmall.copyWith(
                   color: c.textSecondary,
                   fontSize: 12,
@@ -219,13 +223,14 @@ class _AvatarPlaceholder extends StatelessWidget {
 
 // ── Reading Stats Row ─────────────────────────────────────────────────────────
 
-class _ReadingStatsRow extends StatelessWidget {
+class _ReadingStatsRow extends ConsumerWidget {
   const _ReadingStatsRow({required this.profile});
 
   final UserProfile profile;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(appStringsProvider);
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AppDimensions.screenPaddingH,
@@ -235,7 +240,7 @@ class _ReadingStatsRow extends StatelessWidget {
           Expanded(
             child: _StatCard(
               value: '${profile.booksRead}',
-              label: 'Okunan',
+              label: s.booksRead,
               icon: Icons.book_outlined,
             ),
           ),
@@ -243,15 +248,15 @@ class _ReadingStatsRow extends StatelessWidget {
           Expanded(
             child: _StatCard(
               value: '${profile.booksCompleted}',
-              label: 'Tamamlanan',
+              label: s.booksCompleted,
               icon: Icons.check_circle_outline_rounded,
             ),
           ),
           const SizedBox(width: AppDimensions.spaceMD),
           Expanded(
             child: _StatCard(
-              value: '${profile.totalReadingHours.toInt()}s',
-              label: 'Toplam Saat',
+              value: '${profile.totalReadingHours.toInt()}${s.hoursSuffix}',
+              label: s.totalHours,
               icon: Icons.schedule_outlined,
             ),
           ),
@@ -308,19 +313,19 @@ class _StatCard extends StatelessWidget {
 
 // ── Achievement Section ───────────────────────────────────────────────────────
 
-class _AchievementSection extends StatelessWidget {
+class _AchievementSection extends ConsumerWidget {
   const _AchievementSection();
 
-  static const _badges = [
-    _Badge(icon: Icons.local_fire_department_rounded, label: '7 Gün Serisi'),
-    _Badge(icon: Icons.speed_rounded, label: 'Hızlı Okuyucu'),
-    _Badge(icon: Icons.auto_stories_rounded, label: 'İlk Kitap'),
-    _Badge(icon: Icons.star_rounded, label: 'Süper Okuyucu'),
-    _Badge(icon: Icons.emoji_events_rounded, label: 'Ay Rekoru'),
-  ];
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(appStringsProvider);
+    final badges = [
+      _Badge(icon: Icons.local_fire_department_rounded, label: s.badgeStreak7),
+      _Badge(icon: Icons.speed_rounded, label: s.badgeFastReader),
+      _Badge(icon: Icons.auto_stories_rounded, label: s.badgeFirstBook),
+      _Badge(icon: Icons.star_rounded, label: s.badgeSuperReader),
+      _Badge(icon: Icons.emoji_events_rounded, label: s.badgeMonthRecord),
+    ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -332,7 +337,7 @@ class _AchievementSection extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Başarımlar',
+                s.achievements,
                 style: AppTypography.titleLarge.copyWith(
                   color: AppColors.primary,
                   fontWeight: FontWeight.w700,
@@ -356,11 +361,11 @@ class _AchievementSection extends StatelessWidget {
             padding: const EdgeInsets.symmetric(
               horizontal: AppDimensions.screenPaddingH,
             ),
-            itemCount: _badges.length,
+            itemCount: badges.length,
             separatorBuilder: (_, _) =>
                 const SizedBox(width: AppDimensions.spaceMD),
             itemBuilder: (context, index) =>
-                _AchievementBadge(badge: _badges[index]),
+                _AchievementBadge(badge: badges[index]),
           ),
         ),
       ],
@@ -421,17 +426,18 @@ class _AchievementBadge extends StatelessWidget {
 
 // ── Reading Activity Section ──────────────────────────────────────────────────
 
-class _ReadingActivitySection extends StatelessWidget {
+class _ReadingActivitySection extends ConsumerWidget {
   const _ReadingActivitySection({required this.profile});
 
   final UserProfile profile;
 
-  static const _weekDays = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
   static const _weekMinutes = [0, 45, 30, 0, 60, 90, 20];
   static const _maxMinutes = 90.0;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(appStringsProvider);
+    final weekDays = s.weekDays;
     final c = context.vColors;
     return Padding(
       padding: const EdgeInsets.symmetric(
@@ -445,14 +451,14 @@ class _ReadingActivitySection extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Bu Hafta',
+                  s.thisWeek,
                   style: AppTypography.titleMedium.copyWith(
                     fontWeight: FontWeight.w600,
                     fontSize: 15,
                   ),
                 ),
                 Text(
-                  '${_weekMinutes.fold(0, (a, b) => a + b)} dk',
+                  '${_weekMinutes.fold(0, (a, b) => a + b)} ${s.minutes}',
                   style: AppTypography.bodyMedium.copyWith(
                     color: AppColors.primary,
                     fontWeight: FontWeight.w600,
@@ -466,9 +472,9 @@ class _ReadingActivitySection extends StatelessWidget {
               height: 80,
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
-                children: List.generate(_weekDays.length, (i) {
+                children: List.generate(weekDays.length, (i) {
                   final ratio = _weekMinutes[i] / _maxMinutes;
-                  final isToday = i == 3; // Perşembe placeholder
+                  final isToday = i == 3;
                   return Expanded(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 3),
@@ -496,7 +502,7 @@ class _ReadingActivitySection extends StatelessWidget {
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            _weekDays[i],
+                            weekDays[i],
                             style: AppTypography.labelSmall.copyWith(
                               fontSize: 9,
                               color: isToday

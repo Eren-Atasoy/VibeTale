@@ -180,19 +180,20 @@ class _LibraryTabBar extends ConsumerWidget {
 
 // ── Okuyorum Tab ──────────────────────────────────────────────────────────────
 
-class _ReadingTab extends StatelessWidget {
+class _ReadingTab extends ConsumerWidget {
   const _ReadingTab({required this.books, required this.onBookTap});
 
   final List<Book> books;
   final ValueChanged<Book> onBookTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(appStringsProvider);
     if (books.isEmpty) {
       return _EmptyState(
         icon: Icons.import_contacts_rounded,
-        message: 'Henüz okumaya başlamadın',
-        subtitle: 'Keşfet sekmesinden bir kitap seç',
+        message: s.readingEmpty,
+        subtitle: s.readingEmptySub,
       );
     }
     final bottomPadding = MediaQuery.of(context).padding.bottom;
@@ -215,14 +216,15 @@ class _ReadingTab extends StatelessWidget {
 
 // ── Reading Card (with progress bar) ─────────────────────────────────────────
 
-class _ReadingCard extends StatelessWidget {
+class _ReadingCard extends ConsumerWidget {
   const _ReadingCard({required this.book, required this.onTap});
 
   final Book book;
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(appStringsProvider);
     final c = context.vColors;
     return GestureDetector(
       onTap: onTap,
@@ -297,7 +299,7 @@ class _ReadingCard extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        '${(book.readingProgress * 100).toInt()}% tamamlandı',
+                        s.percentDone((book.readingProgress * 100).toInt()),
                         style: AppTypography.labelSmall.copyWith(
                           color: AppColors.primary,
                           fontSize: 10,
@@ -305,7 +307,10 @@ class _ReadingCard extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '${(book.pageCount * book.readingProgress).toInt()}/${book.pageCount} sf.',
+                        s.pagesProgress(
+                          (book.pageCount * book.readingProgress).toInt(),
+                          book.pageCount,
+                        ),
                         style: AppTypography.labelSmall.copyWith(
                           fontSize: 10,
                           letterSpacing: 0.2,
@@ -340,19 +345,20 @@ class _ReadingCard extends StatelessWidget {
 
 // ── Tamamladım Tab ────────────────────────────────────────────────────────────
 
-class _CompletedTab extends StatelessWidget {
+class _CompletedTab extends ConsumerWidget {
   const _CompletedTab({required this.books, required this.onBookTap});
 
   final List<Book> books;
   final ValueChanged<Book> onBookTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(appStringsProvider);
     if (books.isEmpty) {
       return _EmptyState(
         icon: Icons.check_circle_outline_rounded,
-        message: 'Henüz kitap tamamlamadın',
-        subtitle: 'Okuduğun kitaplar burada görünecek',
+        message: s.completedEmpty,
+        subtitle: s.completedEmptySub,
       );
     }
     final bottomPadding = MediaQuery.of(context).padding.bottom;
@@ -449,19 +455,20 @@ class _GridBookCard extends StatelessWidget {
 
 // ── Kaydedilenler Tab ─────────────────────────────────────────────────────────
 
-class _SavedTab extends StatelessWidget {
+class _SavedTab extends ConsumerWidget {
   const _SavedTab({required this.books, required this.onBookTap});
 
   final List<Book> books;
   final ValueChanged<Book> onBookTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(appStringsProvider);
     if (books.isEmpty) {
       return _EmptyState(
         icon: Icons.bookmark_outline_rounded,
-        message: 'Kaydedilen kitap yok',
-        subtitle: 'Kitap detayından kaydet butonuna bas',
+        message: s.savedEmpty,
+        subtitle: s.savedEmptySub,
       );
     }
     final bottomPadding = MediaQuery.of(context).padding.bottom;

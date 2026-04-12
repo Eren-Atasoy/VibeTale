@@ -133,23 +133,15 @@ class AppBottomNavBar extends ConsumerWidget {
 
 // ── Home Screen ───────────────────────────────────────────────────────────────
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _selectedFilter = 0;
-
-  static const _filters = [
-    'Daha fazla keşfet',
-    'Klasikler',
-    'Masallar',
-    'Roman',
-    'Fantastik',
-  ];
 
   void _onBookTap(Book book) => context.push('/book/${book.id}');
 
@@ -185,7 +177,6 @@ class _HomeScreenState extends State<HomeScreen> {
               _HomeTopBar(onSearchTap: _openSearch),
               Expanded(
                 child: _DiscoveryContent(
-                  filters: _filters,
                   selectedFilter: _selectedFilter,
                   onFilterChanged: (i) => setState(() => _selectedFilter = i),
                   onBookTap: _onBookTap,
@@ -269,13 +260,11 @@ class _HomeTopBar extends ConsumerWidget {
 
 class _DiscoveryContent extends ConsumerWidget {
   const _DiscoveryContent({
-    required this.filters,
     required this.selectedFilter,
     required this.onFilterChanged,
     required this.onBookTap,
   });
 
-  final List<String> filters;
   final int selectedFilter;
   final ValueChanged<int> onFilterChanged;
   final ValueChanged<Book> onBookTap;
@@ -283,6 +272,13 @@ class _DiscoveryContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.watch(appStringsProvider);
+    final filters = [
+      s.filterDiscoverMore,
+      s.filterClassics,
+      s.filterFairyTales,
+      s.filterNovel,
+      s.filterFantasy,
+    ];
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     return ListView(
       padding: EdgeInsets.only(
@@ -390,14 +386,15 @@ class _FilterChipsRow extends StatelessWidget {
 
 // ── Hero Banner ───────────────────────────────────────────────────────────────
 
-class _HeroBanner extends StatelessWidget {
+class _HeroBanner extends ConsumerWidget {
   const _HeroBanner({required this.book, required this.onReadTap});
 
   final Book book;
   final VoidCallback onReadTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(appStringsProvider);
     return ClipRRect(
       borderRadius: BorderRadius.circular(AppDimensions.radiusLG),
       child: SizedBox(
@@ -486,7 +483,7 @@ class _HeroBanner extends StatelessWidget {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              '${book.series ?? book.genre} • Popüler',
+                              s.heroSubtitle(book.series ?? book.genre),
                               style: AppTypography.bodyMedium.copyWith(
                                 color: AppColors.backgroundDeep.withValues(
                                   alpha: 0.7,
@@ -512,7 +509,7 @@ class _HeroBanner extends StatelessWidget {
                             ),
                           ),
                           child: Text(
-                            'ŞİMDİ OKU',
+                            s.readNow,
                             style: AppTypography.buttonLabel.copyWith(
                               color: AppColors.primary,
                               fontSize: 12,
@@ -614,14 +611,14 @@ class _BookSection extends StatelessWidget {
 
 // ── Search Dialog (exported for reuse) ───────────────────────────────────────
 
-class HomeSearchDialog extends StatefulWidget {
+class HomeSearchDialog extends ConsumerStatefulWidget {
   const HomeSearchDialog({super.key});
 
   @override
-  State<HomeSearchDialog> createState() => _HomeSearchDialogState();
+  ConsumerState<HomeSearchDialog> createState() => _HomeSearchDialogState();
 }
 
-class _HomeSearchDialogState extends State<HomeSearchDialog> {
+class _HomeSearchDialogState extends ConsumerState<HomeSearchDialog> {
   final _controller = TextEditingController();
   final _focusNode = FocusNode();
   String _query = '';
@@ -663,6 +660,7 @@ class _HomeSearchDialogState extends State<HomeSearchDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final s = ref.watch(appStringsProvider);
     final results = _results;
     final c = context.vColors;
     return Align(
@@ -714,7 +712,7 @@ class _HomeSearchDialogState extends State<HomeSearchDialog> {
                         ),
                         cursorColor: AppColors.primary,
                         decoration: InputDecoration(
-                          hintText: 'Kitap, yazar veya kategori ara...',
+                          hintText: s.searchHint,
                           hintStyle: AppTypography.bodyMedium.copyWith(
                             fontSize: 14,
                           ),
@@ -744,7 +742,7 @@ class _HomeSearchDialogState extends State<HomeSearchDialog> {
                       TextButton(
                         onPressed: () => Navigator.of(context).pop(),
                         child: Text(
-                          'İptal',
+                          s.searchCancel,
                           style: AppTypography.bodyMedium.copyWith(
                             color: AppColors.primary,
                             fontWeight: FontWeight.w500,
@@ -767,7 +765,7 @@ class _HomeSearchDialogState extends State<HomeSearchDialog> {
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        'Kitap, yazar veya kategori gir',
+                        s.searchEmpty,
                         style: AppTypography.bodyMedium,
                       ),
                     ],
@@ -785,7 +783,7 @@ class _HomeSearchDialogState extends State<HomeSearchDialog> {
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        '"$_query" için sonuç bulunamadı',
+                        s.searchNoResults(_query),
                         style: AppTypography.bodyMedium,
                         textAlign: TextAlign.center,
                       ),

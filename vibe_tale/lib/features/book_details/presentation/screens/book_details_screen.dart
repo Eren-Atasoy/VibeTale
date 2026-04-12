@@ -3,16 +3,18 @@ import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:vibe_tale/core/constants/app_colors.dart';
 import 'package:vibe_tale/core/constants/app_dimensions.dart';
 import 'package:vibe_tale/core/constants/app_typography.dart';
+import 'package:vibe_tale/core/providers/app_settings_provider.dart';
 import 'package:vibe_tale/core/theme/app_theme_colors.dart';
 import 'package:vibe_tale/core/widgets/neon_button.dart';
 import 'package:vibe_tale/core/widgets/themed_background.dart';
 import 'package:vibe_tale/features/library/domain/book_model.dart';
 
-class BookDetailsScreen extends StatelessWidget {
+class BookDetailsScreen extends ConsumerWidget {
   const BookDetailsScreen({super.key, required this.bookId});
 
   final String bookId;
@@ -31,7 +33,7 @@ class BookDetailsScreen extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final book = _findBook();
     if (book == null) {
       return _NotFoundView(bookId: bookId);
@@ -156,8 +158,7 @@ class _CoverAppBar extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const SizedBox(height: 80), // account for status bar
-              // Book cover
+              const SizedBox(height: 80),
               Container(
                 width: 130,
                 height: 192,
@@ -200,13 +201,14 @@ class _CoverAppBar extends StatelessWidget {
 
 // ── Details Panel ─────────────────────────────────────────────────────────────
 
-class _DetailsPanel extends StatelessWidget {
+class _DetailsPanel extends ConsumerWidget {
   const _DetailsPanel({required this.book});
 
   final Book book;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(appStringsProvider);
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppDimensions.screenPaddingH,
@@ -217,7 +219,6 @@ class _DetailsPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Title & Author
           if (book.series != null)
             Text(
               book.series!,
@@ -242,7 +243,7 @@ class _DetailsPanel extends StatelessWidget {
 
           // Synopsis
           if (book.synopsis.isNotEmpty) ...[
-            Text('Özet', style: AppTypography.titleLarge),
+            Text(s.synopsis, style: AppTypography.titleLarge),
             const SizedBox(height: AppDimensions.spaceSM),
             Text(book.synopsis, style: AppTypography.bodyMedium),
             const SizedBox(height: AppDimensions.spaceXL),
@@ -250,12 +251,12 @@ class _DetailsPanel extends StatelessWidget {
 
           // CTA buttons
           NeonButton(
-            label: 'OKUMAYA BAŞLA',
+            label: s.startReading,
             onPressed: () => context.push('/read/${book.id}'),
           ),
           const SizedBox(height: AppDimensions.spaceMD),
           NeonButton.outlined(
-            label: 'Kütüphaneye Ekle',
+            label: s.addToLibrary,
             onPressed: () {},
             icon: Icons.add_rounded,
           ),
@@ -267,13 +268,14 @@ class _DetailsPanel extends StatelessWidget {
 
 // ── Meta Row ──────────────────────────────────────────────────────────────────
 
-class _MetaRow extends StatelessWidget {
+class _MetaRow extends ConsumerWidget {
   const _MetaRow({required this.book});
 
   final Book book;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(appStringsProvider);
     return Row(
       children: [
         // Rating
@@ -291,10 +293,10 @@ class _MetaRow extends StatelessWidget {
         // Page count
         if (book.pageCount > 0) ...[
           _Dot(),
-          Text('${book.pageCount} sayfa', style: AppTypography.bodyMedium),
+          Text(s.pageCountLabel(book.pageCount), style: AppTypography.bodyMedium),
         ],
         // New badge
-        if (book.isNew) ...[_Dot(), _Chip(label: 'YENİ', isAccent: true)],
+        if (book.isNew) ...[_Dot(), _Chip(label: s.newBadge, isAccent: true)],
       ],
     );
   }
@@ -350,13 +352,14 @@ class _Chip extends StatelessWidget {
 
 // ── Not Found ─────────────────────────────────────────────────────────────────
 
-class _NotFoundView extends StatelessWidget {
+class _NotFoundView extends ConsumerWidget {
   const _NotFoundView({required this.bookId});
 
   final String bookId;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(appStringsProvider);
     return ThemedBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -380,7 +383,7 @@ class _NotFoundView extends StatelessWidget {
                 size: 48,
               ),
               const SizedBox(height: AppDimensions.spaceMD),
-              Text('Kitap bulunamadı', style: AppTypography.titleLarge),
+              Text(s.bookNotFound, style: AppTypography.titleLarge),
               const SizedBox(height: AppDimensions.spaceSM),
               Text(bookId, style: AppTypography.bodyMedium),
             ],

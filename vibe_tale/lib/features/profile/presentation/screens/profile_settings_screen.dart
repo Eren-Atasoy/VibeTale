@@ -49,13 +49,14 @@ class _ProfileSettingsScreenState
       ('Türkçe', 'tr'),
       ('English', 'en'),
     ];
+    final s = ref.read(appStringsProvider);
     final currentLang = ref.read(appLanguageProvider);
 
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (_) => _BottomSheetContainer(
-        title: 'Dil Seç',
+        title: s.selectLanguage,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: languages.map((entry) {
@@ -68,9 +69,7 @@ class _ProfileSettingsScreenState
                 ref.read(appLanguageProvider.notifier).state = code;
                 Navigator.of(context).pop();
                 _showSnackBar(
-                  code == 'tr'
-                      ? 'Dil Türkçe olarak değiştirildi'
-                      : 'Language changed to English',
+                  code == 'tr' ? s.languageChangedTr : s.languageChangedEn,
                 );
               },
             );
@@ -96,21 +95,22 @@ class _ProfileSettingsScreenState
   }
 
   void _showAccountSheet() {
+    final s = ref.read(appStringsProvider);
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (_) => _BottomSheetContainer(
-        title: 'Hesap Bilgileri',
+        title: s.accountInfo,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _InfoRow(label: 'Ad Soyad', value: 'Eren Atasoy'),
-            _InfoRow(label: 'E-posta', value: 'eren@vibetale.com'),
-            _InfoRow(label: 'Üyelik', value: 'Ocak 2025'),
-            _InfoRow(label: 'Plan', value: 'Ücretsiz'),
+            _InfoRow(label: s.fullName, value: 'Eren Atasoy'),
+            _InfoRow(label: s.emailField, value: 'eren@vibetale.com'),
+            _InfoRow(label: s.membership, value: 'Ocak 2025'),
+            _InfoRow(label: s.plan, value: s.planFree),
             const SizedBox(height: AppDimensions.spaceMD),
             _SheetActionButton(
-              label: 'Hesabı Düzenle',
+              label: s.editAccount,
               icon: Icons.edit_outlined,
               onTap: () => Navigator.of(context).pop(),
             ),
@@ -121,39 +121,40 @@ class _ProfileSettingsScreenState
   }
 
   void _showPrivacySheet() {
+    final s = ref.read(appStringsProvider);
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (_) => _BottomSheetContainer(
-        title: 'Gizlilik',
+        title: s.privacy,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             _SheetOptionTile(
-              label: 'Okuma Geçmişini Gizle',
+              label: s.hideReadingHistory,
               trailing: _buildSwitch(context, false, (_) {}),
               onTap: null,
             ),
             _SheetOptionTile(
-              label: 'Profili Herkese Açık Göster',
+              label: s.publicProfile,
               trailing: _buildSwitch(context, true, (_) {}),
               onTap: null,
             ),
             _SheetOptionTile(
-              label: 'Başarımları Paylaş',
+              label: s.shareAchievements,
               trailing: _buildSwitch(context, true, (_) {}),
               onTap: null,
             ),
             const SizedBox(height: AppDimensions.spaceMD),
             _SheetActionButton(
-              label: 'Verileri İndir',
+              label: s.downloadData,
               icon: Icons.download_outlined,
               onTap: () => Navigator.of(context).pop(),
             ),
             const SizedBox(height: AppDimensions.spaceSM),
             _SheetActionButton(
-              label: 'Hesabı Sil',
+              label: s.deleteAccount,
               icon: Icons.delete_outline_rounded,
               isDestructive: true,
               onTap: () => Navigator.of(context).pop(),
@@ -165,31 +166,32 @@ class _ProfileSettingsScreenState
   }
 
   void _showHelpSheet() {
+    final s = ref.read(appStringsProvider);
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (_) => _BottomSheetContainer(
-        title: 'Yardım & Destek',
+        title: s.helpSupport,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             _SheetOptionTile(
-              label: 'Sık Sorulan Sorular',
+              label: s.faq,
               icon: Icons.quiz_outlined,
               onTap: () => Navigator.of(context).pop(),
             ),
             _SheetOptionTile(
-              label: 'Bize Ulaşın',
+              label: s.contactUs,
               icon: Icons.mail_outline_rounded,
               onTap: () => Navigator.of(context).pop(),
             ),
             _SheetOptionTile(
-              label: 'Geri Bildirim Gönder',
+              label: s.sendFeedback,
               icon: Icons.feedback_outlined,
               onTap: () => Navigator.of(context).pop(),
             ),
             _SheetOptionTile(
-              label: 'Hata Bildir',
+              label: s.reportBug,
               icon: Icons.bug_report_outlined,
               onTap: () => Navigator.of(context).pop(),
             ),
@@ -200,11 +202,12 @@ class _ProfileSettingsScreenState
   }
 
   void _showAboutSheet() {
+    final s = ref.read(appStringsProvider);
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (_) => _BottomSheetContainer(
-        title: 'Hakkında',
+        title: s.about,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -232,13 +235,13 @@ class _ProfileSettingsScreenState
               ),
             ),
             const SizedBox(height: 4),
-            Text('Versiyon 1.0.0', style: AppTypography.bodyMedium),
+            Text(s.versionLabel, style: AppTypography.bodyMedium),
             const SizedBox(height: AppDimensions.spaceMD),
             const Divider(),
             const SizedBox(height: AppDimensions.spaceSM),
-            _InfoRow(label: 'Geliştirici', value: 'VibeTale Team'),
-            _InfoRow(label: 'Lisans', value: 'MIT'),
-            _InfoRow(label: 'Yapı Tarihi', value: 'Ocak 2025'),
+            _InfoRow(label: s.developer, value: 'VibeTale Team'),
+            _InfoRow(label: s.license, value: 'MIT'),
+            _InfoRow(label: s.buildDate, value: s.buildDateValue),
             const SizedBox(height: AppDimensions.spaceMD),
           ],
         ),
@@ -247,6 +250,7 @@ class _ProfileSettingsScreenState
   }
 
   void _confirmLogout() {
+    final s = ref.read(appStringsProvider);
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -255,16 +259,16 @@ class _ProfileSettingsScreenState
           borderRadius: BorderRadius.circular(AppDimensions.radiusLG),
           side: BorderSide(color: context.vColors.glassBorder),
         ),
-        title: Text('Çıkış Yap', style: AppTypography.titleLarge),
+        title: Text(s.logoutConfirmTitle, style: AppTypography.titleLarge),
         content: Text(
-          'Hesabından çıkmak istediğine emin misin?',
+          s.logoutConfirmBody,
           style: AppTypography.bodyMedium,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
             child: Text(
-              'İptal',
+              s.cancel,
               style: AppTypography.bodyMedium.copyWith(
                 color: context.vColors.textSecondary,
               ),
@@ -276,7 +280,7 @@ class _ProfileSettingsScreenState
               context.go(AppRoutes.login);
             },
             child: Text(
-              'Çıkış Yap',
+              s.logout,
               style: AppTypography.bodyMedium.copyWith(
                 color: AppColors.error,
                 fontWeight: FontWeight.w600,
@@ -290,6 +294,7 @@ class _ProfileSettingsScreenState
 
   @override
   Widget build(BuildContext context) {
+    final s = ref.watch(appStringsProvider);
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     final themeMode = ref.watch(themeModeProvider);
     final isDark = themeMode == ThemeMode.dark;
@@ -313,13 +318,13 @@ class _ProfileSettingsScreenState
                     bottomPadding + AppDimensions.spaceXXL,
                   ),
                   children: [
-                    // ── Genel ─────────────────────────────────────────────────
+                    // ── General ───────────────────────────────────────────────
                     _SettingsGroup(
-                      title: 'GENEL',
+                      title: s.sectionGeneral,
                       tiles: [
                         _SettingsTile(
                           icon: Icons.notifications_outlined,
-                          label: 'Bildirimler',
+                          label: s.notifications,
                           trailing: _buildSwitch(
                             context,
                             _notificationsOn,
@@ -328,7 +333,7 @@ class _ProfileSettingsScreenState
                         ),
                         _SettingsTile(
                           icon: Icons.alarm_outlined,
-                          label: 'Okuma Hatırlatıcısı',
+                          label: s.readingReminder,
                           trailing: _buildSwitch(
                             context,
                             _readingReminder,
@@ -339,12 +344,12 @@ class _ProfileSettingsScreenState
                           icon: isDark
                               ? Icons.dark_mode_outlined
                               : Icons.light_mode_outlined,
-                          label: 'Tema',
+                          label: s.theme,
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                isDark ? 'Karanlık' : 'Aydınlık',
+                                isDark ? s.themeDark : s.themeLight,
                                 style: AppTypography.bodyMedium.copyWith(
                                   color: context.vColors.textSecondary,
                                   fontSize: 13,
@@ -365,7 +370,7 @@ class _ProfileSettingsScreenState
                         ),
                         _SettingsTile(
                           icon: Icons.language_outlined,
-                          label: 'Dil',
+                          label: s.language,
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -391,13 +396,13 @@ class _ProfileSettingsScreenState
 
                     const SizedBox(height: AppDimensions.spaceLG),
 
-                    // ── Hesap ─────────────────────────────────────────────────
+                    // ── Account ───────────────────────────────────────────────
                     _SettingsGroup(
-                      title: 'HESAP',
+                      title: s.sectionAccount,
                       tiles: [
                         _SettingsTile(
                           icon: Icons.person_outline_rounded,
-                          label: 'Hesap Bilgileri',
+                          label: s.accountInfo,
                           trailing: Icon(
                             Icons.chevron_right_rounded,
                             color: context.vColors.textSecondary,
@@ -407,7 +412,7 @@ class _ProfileSettingsScreenState
                         ),
                         _SettingsTile(
                           icon: Icons.lock_outline_rounded,
-                          label: 'Gizlilik',
+                          label: s.privacy,
                           trailing: Icon(
                             Icons.chevron_right_rounded,
                             color: context.vColors.textSecondary,
@@ -417,7 +422,7 @@ class _ProfileSettingsScreenState
                         ),
                         _SettingsTile(
                           icon: Icons.help_outline_rounded,
-                          label: 'Yardım & Destek',
+                          label: s.helpSupport,
                           trailing: Icon(
                             Icons.chevron_right_rounded,
                             color: context.vColors.textSecondary,
@@ -427,7 +432,7 @@ class _ProfileSettingsScreenState
                         ),
                         _SettingsTile(
                           icon: Icons.info_outline_rounded,
-                          label: 'Hakkında',
+                          label: s.about,
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -468,11 +473,12 @@ class _ProfileSettingsScreenState
 
 // ── Settings Top Bar ──────────────────────────────────────────────────────────
 
-class _SettingsTopBar extends StatelessWidget {
+class _SettingsTopBar extends ConsumerWidget {
   const _SettingsTopBar();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(appStringsProvider);
     final c = context.vColors;
     return Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -502,7 +508,7 @@ class _SettingsTopBar extends StatelessWidget {
           ),
           const SizedBox(width: AppDimensions.spaceMD),
           Text(
-            'Ayarlar',
+            s.settings,
             style: AppTypography.headlineMedium.copyWith(
               color: AppColors.primary,
               fontWeight: FontWeight.w700,
@@ -829,13 +835,14 @@ class _SheetActionButton extends StatelessWidget {
 
 // ── Logout Button ─────────────────────────────────────────────────────────────
 
-class _LogoutButton extends StatelessWidget {
+class _LogoutButton extends ConsumerWidget {
   const _LogoutButton({required this.onTap});
 
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(appStringsProvider);
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -855,7 +862,7 @@ class _LogoutButton extends StatelessWidget {
             const Icon(Icons.logout_rounded, color: AppColors.error, size: 20),
             const SizedBox(width: AppDimensions.spaceSM),
             Text(
-              'Çıkış Yap',
+              s.logout,
               style: AppTypography.buttonLabel.copyWith(
                 color: AppColors.error,
                 fontSize: 14,

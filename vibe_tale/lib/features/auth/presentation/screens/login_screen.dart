@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:vibe_tale/core/constants/app_colors.dart';
 import 'package:vibe_tale/core/constants/app_dimensions.dart';
 import 'package:vibe_tale/core/constants/app_typography.dart';
+import 'package:vibe_tale/core/localization/app_strings.dart';
+import 'package:vibe_tale/core/providers/app_settings_provider.dart';
 import 'package:vibe_tale/core/router/app_router.dart';
 import 'package:vibe_tale/core/theme/app_theme_colors.dart';
 import 'package:vibe_tale/core/widgets/neon_button.dart';
@@ -12,29 +15,29 @@ import 'package:vibe_tale/core/widgets/vibe_text_field.dart';
 
 // ── Validation helpers ────────────────────────────────────────────────────────
 
-String? _validateEmail(String value) {
-  if (value.isEmpty) return 'E-posta adresi boş bırakılamaz.';
+String? _validateEmail(String value, AppStrings s) {
+  if (value.isEmpty) return s.errEmailEmpty;
   final emailRegex = RegExp(r'^[\w.+-]+@[\w-]+\.[a-zA-Z]{2,}$');
-  if (!emailRegex.hasMatch(value)) return 'Geçerli bir e-posta adresi gir.';
+  if (!emailRegex.hasMatch(value)) return s.errEmailInvalid;
   return null;
 }
 
-String? _validatePassword(String value) {
-  if (value.isEmpty) return 'Şifre boş bırakılamaz.';
-  if (value.length < 6) return 'Şifre en az 6 karakter olmalı.';
+String? _validatePassword(String value, AppStrings s) {
+  if (value.isEmpty) return s.errPasswordEmpty;
+  if (value.length < 6) return s.errPasswordMin6;
   return null;
 }
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
@@ -50,18 +53,21 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _onEmailChanged(String value) {
-    final error = _validateEmail(value);
+    final s = ref.read(appStringsProvider);
+    final error = _validateEmail(value, s);
     if (_emailError != error) setState(() => _emailError = error);
   }
 
   void _onPasswordChanged(String value) {
-    final error = _validatePassword(value);
+    final s = ref.read(appStringsProvider);
+    final error = _validatePassword(value, s);
     if (_passwordError != error) setState(() => _passwordError = error);
   }
 
   bool _validateAll() {
-    final emailErr = _validateEmail(_emailController.text);
-    final passErr = _validatePassword(_passwordController.text);
+    final s = ref.read(appStringsProvider);
+    final emailErr = _validateEmail(_emailController.text, s);
+    final passErr = _validatePassword(_passwordController.text, s);
     setState(() {
       _emailError = emailErr;
       _passwordError = passErr;
@@ -82,8 +88,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Gradient wraps Scaffold so it covers the entire screen — including
-    // the system navigation bar area and bottom safe-area inset.
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         systemNavigationBarColor: Colors.transparent,
@@ -142,9 +146,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
 // ── Logo Section ──────────────────────────────────────────────────────────────
 
-class _LogoSection extends StatelessWidget {
+class _LogoSection extends ConsumerWidget {
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(appStringsProvider);
     return Column(
       children: [
         Text(
@@ -155,7 +160,7 @@ class _LogoSection extends StatelessWidget {
         ),
         const SizedBox(height: AppDimensions.spaceSM),
         Text(
-          'SÜRÜKLEYİCİ KÜTÜPHANENİZ',
+          s.appTagline,
           style: AppTypography.tagline.copyWith(
             color: context.vColors.textSecondary,
           ),
@@ -167,7 +172,7 @@ class _LogoSection extends StatelessWidget {
 
 // ── Form Section ──────────────────────────────────────────────────────────────
 
-class _FormSection extends StatelessWidget {
+class _FormSection extends ConsumerWidget {
   const _FormSection({
     required this.emailController,
     required this.passwordController,
@@ -189,26 +194,27 @@ class _FormSection extends StatelessWidget {
   final VoidCallback onLogin;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(appStringsProvider);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Text(
-          'Yolculuğuna Başla',
+          s.startYourJourney,
           style: AppTypography.displayMedium.copyWith(
             color: context.vColors.textPrimary,
           ),
         ),
         const SizedBox(height: AppDimensions.spaceSM),
         Text(
-          'Devam etmek için bilgilerini gir.',
+          s.loginSubtitle,
           style: AppTypography.bodyMedium.copyWith(
             color: context.vColors.textSecondary,
           ),
         ),
         const SizedBox(height: AppDimensions.spaceXL),
         VibeTextField(
-          hint: 'E-posta Adresi',
+          hint: s.emailLabel,
           controller: emailController,
           suffixIcon: Icons.mail_outline_rounded,
           keyboardType: TextInputType.emailAddress,
@@ -218,7 +224,7 @@ class _FormSection extends StatelessWidget {
         ),
         const SizedBox(height: AppDimensions.spaceMD),
         VibeTextField.password(
-          hint: 'Şifre',
+          hint: s.passwordLabel,
           controller: passwordController,
           onChanged: onPasswordChanged,
           onSubmitted: (_) => onLogin(),
@@ -226,7 +232,7 @@ class _FormSection extends StatelessWidget {
         ),
         const SizedBox(height: AppDimensions.spaceLG),
         NeonButton(
-          label: 'GİRİŞ YAP',
+          label: s.loginButton,
           onPressed: onLogin,
           isLoading: isLoading,
         ),
@@ -237,13 +243,14 @@ class _FormSection extends StatelessWidget {
 
 // ── Social Section ────────────────────────────────────────────────────────────
 
-class _SocialSection extends StatelessWidget {
+class _SocialSection extends ConsumerWidget {
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(appStringsProvider);
     final c = context.vColors;
     return Column(
       children: [
-        const _DividerWithText(label: 'VEYA ŞUNUNLA DEVAM ET'),
+        _DividerWithText(label: s.orContinueWith),
         const SizedBox(height: AppDimensions.spaceLG),
         Row(
           children: [
@@ -264,7 +271,7 @@ class _SocialSection extends StatelessWidget {
             const SizedBox(width: AppDimensions.spaceMD),
             Expanded(
               child: NeonButton.outlined(
-                label: 'Sihirli Bağlantı',
+                label: s.magicLink,
                 onPressed: () {},
                 icon: Icons.mail_outline_rounded,
               ),
@@ -278,15 +285,16 @@ class _SocialSection extends StatelessWidget {
 
 // ── Footer Links ──────────────────────────────────────────────────────────────
 
-class _FooterLinks extends StatelessWidget {
+class _FooterLinks extends ConsumerWidget {
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(appStringsProvider);
     return Column(
       children: [
         GestureDetector(
           onTap: () {},
           child: Text(
-            'Şifremi Unuttum?',
+            s.forgotPassword,
             style: AppTypography.bodyMedium.copyWith(
               color: context.vColors.textSecondary,
             ),
@@ -301,9 +309,9 @@ class _FooterLinks extends StatelessWidget {
                 color: context.vColors.textSecondary,
               ),
               children: [
-                const TextSpan(text: 'Yeni misin? '),
+                TextSpan(text: s.newHere),
                 TextSpan(
-                  text: 'Hesap Oluştur',
+                  text: s.createAccount,
                   style: AppTypography.bodyMedium.copyWith(
                     color: AppColors.primary,
                     fontWeight: FontWeight.w700,

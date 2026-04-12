@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:vibe_tale/core/constants/app_colors.dart';
 import 'package:vibe_tale/core/constants/app_dimensions.dart';
 import 'package:vibe_tale/core/constants/app_typography.dart';
+import 'package:vibe_tale/core/localization/app_strings.dart';
+import 'package:vibe_tale/core/providers/app_settings_provider.dart';
 import 'package:vibe_tale/core/router/app_router.dart';
 import 'package:vibe_tale/core/theme/app_theme_colors.dart';
 import 'package:vibe_tale/core/widgets/neon_button.dart';
@@ -11,39 +14,37 @@ import 'package:vibe_tale/core/widgets/vibe_text_field.dart';
 
 // ── Validation helpers ────────────────────────────────────────────────────────
 
-String? _validateEmail(String value) {
-  if (value.isEmpty) return 'E-posta adresi boş bırakılamaz.';
+String? _validateEmail(String value, AppStrings s) {
+  if (value.isEmpty) return s.errEmailEmpty;
   final emailRegex = RegExp(r'^[\w.+-]+@[\w-]+\.[a-zA-Z]{2,}$');
-  if (!emailRegex.hasMatch(value)) return 'Geçerli bir e-posta adresi gir.';
+  if (!emailRegex.hasMatch(value)) return s.errEmailInvalid;
   return null;
 }
 
-String? _validateUsername(String value) {
-  if (value.isEmpty) return 'Kullanıcı adı boş bırakılamaz.';
-  if (value.length < 3) return 'Kullanıcı adı en az 3 karakter olmalı.';
+String? _validateUsername(String value, AppStrings s) {
+  if (value.isEmpty) return s.errUsernameEmpty;
+  if (value.length < 3) return s.errUsernameMin3;
   final usernameRegex = RegExp(r'^@?[a-zA-Z0-9_.]+$');
-  if (!usernameRegex.hasMatch(value)) {
-    return 'Sadece harf, rakam, nokta ve alt çizgi kullanılabilir.';
-  }
+  if (!usernameRegex.hasMatch(value)) return s.errUsernameChars;
   return null;
 }
 
-String? _validatePassword(String value) {
-  if (value.isEmpty) return 'Şifre boş bırakılamaz.';
-  if (value.length < 8) return 'Şifre en az 8 karakter olmalı.';
+String? _validatePassword(String value, AppStrings s) {
+  if (value.isEmpty) return s.errPasswordEmpty;
+  if (value.length < 8) return s.errPasswordMin8;
   return null;
 }
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
-class SignupScreen extends StatefulWidget {
+class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
 
   @override
-  State<SignupScreen> createState() => _SignupScreenState();
+  ConsumerState<SignupScreen> createState() => _SignupScreenState();
 }
 
-class _SignupScreenState extends State<SignupScreen> {
+class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _emailController = TextEditingController();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -62,24 +63,28 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   void _onEmailChanged(String value) {
-    final error = _validateEmail(value);
+    final s = ref.read(appStringsProvider);
+    final error = _validateEmail(value, s);
     if (_emailError != error) setState(() => _emailError = error);
   }
 
   void _onUsernameChanged(String value) {
-    final error = _validateUsername(value);
+    final s = ref.read(appStringsProvider);
+    final error = _validateUsername(value, s);
     if (_usernameError != error) setState(() => _usernameError = error);
   }
 
   void _onPasswordChanged(String value) {
-    final error = _validatePassword(value);
+    final s = ref.read(appStringsProvider);
+    final error = _validatePassword(value, s);
     if (_passwordError != error) setState(() => _passwordError = error);
   }
 
   bool _validateAll() {
-    final emailErr = _validateEmail(_emailController.text);
-    final usernameErr = _validateUsername(_usernameController.text);
-    final passErr = _validatePassword(_passwordController.text);
+    final s = ref.read(appStringsProvider);
+    final emailErr = _validateEmail(_emailController.text, s);
+    final usernameErr = _validateUsername(_usernameController.text, s);
+    final passErr = _validatePassword(_passwordController.text, s);
     setState(() {
       _emailError = emailErr;
       _usernameError = usernameErr;
@@ -212,9 +217,10 @@ class _PageIndicator extends StatelessWidget {
 
 // ── Heading Section ───────────────────────────────────────────────────────────
 
-class _HeadingSection extends StatelessWidget {
+class _HeadingSection extends ConsumerWidget {
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(appStringsProvider);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -224,9 +230,9 @@ class _HeadingSection extends StatelessWidget {
               color: context.vColors.textPrimary,
             ),
             children: [
-              const TextSpan(text: 'Hikayeni '),
+              TextSpan(text: s.startStoryPrefix),
               TextSpan(
-                text: 'Başlat',
+                text: s.startStoryAccent,
                 style: AppTypography.displayMedium.copyWith(
                   color: AppColors.primary,
                   fontStyle: FontStyle.italic,
@@ -237,7 +243,7 @@ class _HeadingSection extends StatelessWidget {
         ),
         const SizedBox(height: AppDimensions.spaceSM),
         Text(
-          'Kütüphaneni düzenlememize izin ver.\nKişiselleştirmeye başlamak için bilgilerini gir.',
+          s.signupSubtitle,
           style: AppTypography.bodyMedium.copyWith(
             color: context.vColors.textSecondary,
           ),
@@ -249,7 +255,7 @@ class _HeadingSection extends StatelessWidget {
 
 // ── Form Section ──────────────────────────────────────────────────────────────
 
-class _FormSection extends StatelessWidget {
+class _FormSection extends ConsumerWidget {
   const _FormSection({
     required this.emailController,
     required this.usernameController,
@@ -277,13 +283,14 @@ class _FormSection extends StatelessWidget {
   final VoidCallback onSignup;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(appStringsProvider);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         VibeTextField(
           hint: 'name@example.com',
-          label: 'E-posta Adresi',
+          label: s.emailLabel,
           controller: emailController,
           prefixIcon: Icons.circle_outlined,
           keyboardType: TextInputType.emailAddress,
@@ -294,7 +301,7 @@ class _FormSection extends StatelessWidget {
         const SizedBox(height: AppDimensions.spaceMD),
         VibeTextField(
           hint: '@bookworm',
-          label: 'Kullanıcı Adı',
+          label: s.usernameLabel,
           controller: usernameController,
           prefixIcon: Icons.circle_outlined,
           textInputAction: TextInputAction.next,
@@ -304,7 +311,7 @@ class _FormSection extends StatelessWidget {
         const SizedBox(height: AppDimensions.spaceMD),
         VibeTextField.password(
           hint: '••••••••',
-          label: 'Şifre',
+          label: s.passwordLabel,
           controller: passwordController,
           onChanged: onPasswordChanged,
           onSubmitted: (_) => onSignup(),
@@ -312,7 +319,7 @@ class _FormSection extends StatelessWidget {
         ),
         const SizedBox(height: AppDimensions.spaceLG),
         NeonButton(
-          label: 'Devam Et  →',
+          label: s.continueButton,
           onPressed: onSignup,
           isLoading: isLoading,
         ),
@@ -323,12 +330,13 @@ class _FormSection extends StatelessWidget {
 
 // ── Social Section ────────────────────────────────────────────────────────────
 
-class _SocialSection extends StatelessWidget {
+class _SocialSection extends ConsumerWidget {
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(appStringsProvider);
     return Column(
       children: [
-        const _DividerWithText(label: 'Veya şununla hızlandır:'),
+        _DividerWithText(label: s.orSpeedUp),
         const SizedBox(height: AppDimensions.spaceLG),
         Row(
           children: [
@@ -388,9 +396,10 @@ class _SocialOutlineButton extends StatelessWidget {
 
 // ── Footer Link ───────────────────────────────────────────────────────────────
 
-class _FooterLink extends StatelessWidget {
+class _FooterLink extends ConsumerWidget {
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(appStringsProvider);
     return Center(
       child: GestureDetector(
         onTap: () => context.pop(),
@@ -400,9 +409,9 @@ class _FooterLink extends StatelessWidget {
               color: context.vColors.textSecondary,
             ),
             children: [
-              const TextSpan(text: 'Zaten üye misin? '),
+              TextSpan(text: s.alreadyMember),
               TextSpan(
-                text: 'Giriş Yap',
+                text: s.loginAction,
                 style: AppTypography.bodyMedium.copyWith(
                   color: AppColors.primary,
                   fontWeight: FontWeight.w700,

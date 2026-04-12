@@ -1,8 +1,10 @@
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vibe_tale/core/constants/app_colors.dart';
 import 'package:vibe_tale/core/constants/app_dimensions.dart';
 import 'package:vibe_tale/core/constants/app_typography.dart';
+import 'package:vibe_tale/core/providers/app_settings_provider.dart';
 import 'package:vibe_tale/core/theme/app_theme_colors.dart';
 import 'package:vibe_tale/features/home/presentation/screens/home_screen.dart';
 import 'package:vibe_tale/core/widgets/themed_background.dart';
@@ -142,16 +144,16 @@ const _leaderboardUsers = [
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
-class ReadingStatsScreen extends StatefulWidget {
+class ReadingStatsScreen extends ConsumerStatefulWidget {
   const ReadingStatsScreen({super.key});
 
   @override
-  State<ReadingStatsScreen> createState() => _ReadingStatsScreenState();
+  ConsumerState<ReadingStatsScreen> createState() => _ReadingStatsScreenState();
 }
 
 enum _Period { weekly, monthly, allTime }
 
-class _ReadingStatsScreenState extends State<ReadingStatsScreen>
+class _ReadingStatsScreenState extends ConsumerState<ReadingStatsScreen>
     with SingleTickerProviderStateMixin {
   _Period _period = _Period.monthly;
   late final AnimationController _podiumController;
@@ -218,14 +220,15 @@ class _ReadingStatsScreenState extends State<ReadingStatsScreen>
 
 // ── Top Bar ───────────────────────────────────────────────────────────────────
 
-class _TopBar extends StatelessWidget {
+class _TopBar extends ConsumerWidget {
   const _TopBar({required this.period, required this.onPeriodChanged});
 
   final _Period period;
   final ValueChanged<_Period> onPeriodChanged;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(appStringsProvider);
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppDimensions.screenPaddingH,
@@ -242,7 +245,7 @@ class _TopBar extends StatelessWidget {
                   color: AppColors.primary, size: 28),
               const SizedBox(width: AppDimensions.spaceSM),
               Text(
-                'Liderler',
+                s.leaderboard,
                 style: AppTypography.headlineMedium.copyWith(
                   color: AppColors.primary,
                   fontWeight: FontWeight.w700,
@@ -262,17 +265,17 @@ class _TopBar extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     _PeriodChip(
-                      label: 'Hafta',
+                      label: s.periodWeek,
                       isSelected: period == _Period.weekly,
                       onTap: () => onPeriodChanged(_Period.weekly),
                     ),
                     _PeriodChip(
-                      label: 'Ay',
+                      label: s.periodMonth,
                       isSelected: period == _Period.monthly,
                       onTap: () => onPeriodChanged(_Period.monthly),
                     ),
                     _PeriodChip(
-                      label: 'Tüm',
+                      label: s.periodAll,
                       isSelected: period == _Period.allTime,
                       onTap: () => onPeriodChanged(_Period.allTime),
                     ),
@@ -328,7 +331,7 @@ class _PeriodChip extends StatelessWidget {
 
 // ── Leaderboard Body ──────────────────────────────────────────────────────────
 
-class _LeaderboardBody extends StatelessWidget {
+class _LeaderboardBody extends ConsumerWidget {
   const _LeaderboardBody({
     required this.users,
     required this.podiumAnim,
@@ -338,7 +341,8 @@ class _LeaderboardBody extends StatelessWidget {
   final Animation<double> podiumAnim;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(appStringsProvider);
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     final currentUser = users.firstWhere((u) => u.isCurrentUser);
     final top3 = users.take(3).toList();
@@ -365,7 +369,7 @@ class _LeaderboardBody extends StatelessWidget {
           child: Row(
             children: [
               Text(
-                'Sıralama',
+                s.ranking,
                 style: AppTypography.titleLarge.copyWith(
                   color: AppColors.primary,
                   fontWeight: FontWeight.w700,
@@ -374,7 +378,7 @@ class _LeaderboardBody extends StatelessWidget {
               ),
               const Spacer(),
               Text(
-                'Okunan Kitap',
+                s.booksReadLabel,
                 style: AppTypography.bodyMedium.copyWith(
                   fontSize: 11,
                   color: context.vColors.textSecondary,
@@ -394,13 +398,14 @@ class _LeaderboardBody extends StatelessWidget {
 
 // ── My Stats Card ─────────────────────────────────────────────────────────────
 
-class _MyStatsCard extends StatelessWidget {
+class _MyStatsCard extends ConsumerWidget {
   const _MyStatsCard({required this.user});
 
   final LeaderboardUser user;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(appStringsProvider);
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AppDimensions.screenPaddingH,
@@ -439,7 +444,7 @@ class _MyStatsCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Benim Durumum',
+                    s.myStatus,
                     style: AppTypography.labelSmall.copyWith(
                       color: context.vColors.textSecondary,
                       fontSize: 10,
@@ -485,7 +490,7 @@ class _MyStatsCard extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    'Sıra',
+                    s.rankLabel,
                     style: AppTypography.labelSmall.copyWith(
                       color: AppColors.primary.withValues(alpha: 0.7),
                       fontSize: 9,
@@ -593,7 +598,7 @@ class _Podium extends StatelessWidget {
   }
 }
 
-class _PodiumColumn extends StatelessWidget {
+class _PodiumColumn extends ConsumerWidget {
   const _PodiumColumn({
     required this.user,
     required this.height,
@@ -615,7 +620,8 @@ class _PodiumColumn extends StatelessWidget {
   final bool showCrown;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(appStringsProvider);
     return SizedBox(
       width: width,
       child: Column(
@@ -643,7 +649,7 @@ class _PodiumColumn extends StatelessWidget {
           ),
           // Books count
           Text(
-            '${user.booksRead} kitap',
+            '${user.booksRead} ${s.booksWord}',
             style: AppTypography.labelSmall.copyWith(
               color: color,
               fontSize: 10,
@@ -688,13 +694,14 @@ class _PodiumColumn extends StatelessWidget {
 
 // ── Rank Row (4th+) ───────────────────────────────────────────────────────────
 
-class _RankRow extends StatelessWidget {
+class _RankRow extends ConsumerWidget {
   const _RankRow({required this.user});
 
   final LeaderboardUser user;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(appStringsProvider);
     final isMe = user.isCurrentUser;
     return Container(
       margin: const EdgeInsets.symmetric(
@@ -761,7 +768,7 @@ class _RankRow extends StatelessWidget {
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          'SEN',
+                          s.youBadge,
                           style: AppTypography.labelSmall.copyWith(
                             color: AppColors.backgroundDeep,
                             fontSize: 9,
@@ -774,7 +781,7 @@ class _RankRow extends StatelessWidget {
                   ],
                 ),
                 Text(
-                  '🔥 ${user.readingStreak} gün • ${user.pagesRead} sayfa',
+                  s.streakLine(user.readingStreak, user.pagesRead),
                   style: AppTypography.bodyMedium.copyWith(
                     fontSize: 10,
                     color: context.vColors.textSecondary,
@@ -796,7 +803,7 @@ class _RankRow extends StatelessWidget {
                 ),
               ),
               Text(
-                'kitap',
+                s.booksWord,
                 style: AppTypography.labelSmall.copyWith(
                   color: context.vColors.textSecondary,
                   fontSize: 9,

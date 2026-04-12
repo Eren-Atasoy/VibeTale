@@ -1,24 +1,27 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:vibe_tale/core/constants/app_colors.dart';
 import 'package:vibe_tale/core/constants/app_dimensions.dart';
 import 'package:vibe_tale/core/constants/app_typography.dart';
+import 'package:vibe_tale/core/localization/app_strings.dart';
+import 'package:vibe_tale/core/providers/app_settings_provider.dart';
 import 'package:vibe_tale/core/theme/app_theme_colors.dart';
 import 'package:vibe_tale/core/widgets/themed_background.dart';
 // ── File Upload Screen ────────────────────────────────────────────────────────
 
-class FileUploadScreen extends StatefulWidget {
+class FileUploadScreen extends ConsumerStatefulWidget {
   const FileUploadScreen({super.key});
 
   @override
-  State<FileUploadScreen> createState() => _FileUploadScreenState();
+  ConsumerState<FileUploadScreen> createState() => _FileUploadScreenState();
 }
 
 enum _UploadState { idle, picked, uploading, done, error }
 
-class _FileUploadScreenState extends State<FileUploadScreen>
+class _FileUploadScreenState extends ConsumerState<FileUploadScreen>
     with SingleTickerProviderStateMixin {
   _UploadState _state = _UploadState.idle;
   String? _fileName;
@@ -96,6 +99,7 @@ class _FileUploadScreenState extends State<FileUploadScreen>
 
   @override
   Widget build(BuildContext context) {
+    final s = ref.watch(appStringsProvider);
     return ThemedBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -130,7 +134,7 @@ class _FileUploadScreenState extends State<FileUploadScreen>
                     Expanded(
                       child: _SecondaryButton(
                         icon: Icons.link_rounded,
-                        label: 'URL Yapıştır',
+                        label: s.urlPaste,
                         onTap: () => _showUrlSheet(context),
                       ),
                     ),
@@ -138,7 +142,7 @@ class _FileUploadScreenState extends State<FileUploadScreen>
                     Expanded(
                       child: _SecondaryButton(
                         icon: Icons.cloud_download_outlined,
-                        label: 'Buluttan İçe Aktar',
+                        label: s.cloudImport,
                         onTap: () => _showCloudSheet(context),
                       ),
                     ),
@@ -149,7 +153,7 @@ class _FileUploadScreenState extends State<FileUploadScreen>
 
                 // ── Supported Formats
                 Text(
-                  'Desteklenen formatlar: EPUB, PDF, DOCX, TXT',
+                  s.supportedFormats,
                   style: AppTypography.bodyMedium.copyWith(
                     fontSize: 11,
                     color: context.vColors.textHint,
@@ -189,12 +193,13 @@ class _FileUploadScreenState extends State<FileUploadScreen>
 
 // ── App Bar ───────────────────────────────────────────────────────────────────
 
-class _AppBar extends StatelessWidget implements PreferredSizeWidget {
+class _AppBar extends ConsumerWidget implements PreferredSizeWidget {
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(appStringsProvider);
     return AppBar(
       backgroundColor: Colors.transparent,
       elevation: 0,
@@ -203,7 +208,7 @@ class _AppBar extends StatelessWidget implements PreferredSizeWidget {
         onPressed: () => context.pop(),
       ),
       title: Text(
-        'Kütüphaneye Ekle',
+        s.addToLibrary,
         style: AppTypography.titleLarge.copyWith(
           fontSize: 17,
           fontWeight: FontWeight.w600,
@@ -218,7 +223,7 @@ class _AppBar extends StatelessWidget implements PreferredSizeWidget {
 
 // ── Main Upload Card ──────────────────────────────────────────────────────────
 
-class _UploadCard extends StatelessWidget {
+class _UploadCard extends ConsumerWidget {
   const _UploadCard({
     required this.state,
     required this.fileName,
@@ -238,7 +243,8 @@ class _UploadCard extends StatelessWidget {
   final VoidCallback onFinish;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(appStringsProvider);
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -288,7 +294,7 @@ class _UploadCard extends StatelessWidget {
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 300),
                   child: Text(
-                    _titleFor(state),
+                    _titleFor(s, state),
                     key: ValueKey(state),
                     style: AppTypography.headlineMedium.copyWith(
                       fontSize: 24,
@@ -304,7 +310,7 @@ class _UploadCard extends StatelessWidget {
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 300),
                   child: Text(
-                    _subtitleFor(state, fileName),
+                    _subtitleFor(s, state, fileName),
                     key: ValueKey('$state-$fileName'),
                     style: AppTypography.bodyMedium.copyWith(
                       height: 1.5,
@@ -344,14 +350,14 @@ class _UploadCard extends StatelessWidget {
                 // CTA Button
                 if (state == _UploadState.idle || state == _UploadState.error)
                   _PrimaryButton(
-                    label: 'Dosyalara Göz At',
+                    label: s.browseFiles,
                     onPressed: onPickFile,
                   )
                 else if (state == _UploadState.done)
                   Column(
                     children: [
                       _PrimaryButton(
-                        label: 'Kütüphaneye Git',
+                        label: s.goToLibrary,
                         icon: Icons.library_books_rounded,
                         onPressed: onFinish,
                       ),
@@ -359,7 +365,7 @@ class _UploadCard extends StatelessWidget {
                       TextButton(
                         onPressed: onReset,
                         child: Text(
-                          'Başka Dosya Ekle',
+                          s.addAnotherFile,
                           style: AppTypography.bodyMedium.copyWith(
                             color: AppColors.primary,
                             fontWeight: FontWeight.w500,
@@ -373,13 +379,10 @@ class _UploadCard extends StatelessWidget {
 
                 // VibeEngine badge
                 if (state == _UploadState.idle)
-                  _VibeEngineBadge(
-                    label:
-                        state == _UploadState.done ? 'Analiz Tamamlandı' : 'VIBEENGINE HAZIR',
-                  ),
+                  _VibeEngineBadge(label: s.vibeEngineReady),
                 if (state == _UploadState.done)
                   _VibeEngineBadge(
-                    label: 'Analiz Tamamlandı',
+                    label: s.vibeEngineAnalyzed,
                     success: true,
                   ),
               ],
@@ -390,23 +393,21 @@ class _UploadCard extends StatelessWidget {
     );
   }
 
-  String _titleFor(_UploadState s) => switch (s) {
-        _UploadState.idle => 'Dosya Yükle',
-        _UploadState.picked => 'Hazırlanıyor...',
-        _UploadState.uploading => 'Yükleniyor',
-        _UploadState.done => 'Tamamlandı!',
-        _UploadState.error => 'Hata Oluştu',
+  String _titleFor(AppStrings s, _UploadState state) => switch (state) {
+        _UploadState.idle => s.uploadTitle,
+        _UploadState.picked => s.uploadPreparing,
+        _UploadState.uploading => s.uploadUploading,
+        _UploadState.done => s.uploadDone,
+        _UploadState.error => s.uploadError,
       };
 
-  String _subtitleFor(_UploadState s, String? name) => switch (s) {
-        _UploadState.idle =>
-          'Hikayeni buraya bırak veya\narşivlerine göz atmak için dokun.',
+  String _subtitleFor(AppStrings s, _UploadState state, String? name) =>
+      switch (state) {
+        _UploadState.idle => s.uploadIdleSubtitle,
         _UploadState.picked => name ?? '',
-        _UploadState.uploading => name != null ? '"$name" yükleniyor' : '',
-        _UploadState.done =>
-          '${name ?? ''}\nKütüphanene başarıyla eklendi.',
-        _UploadState.error =>
-          'Dosya yüklenemedi. Tekrar dene.',
+        _UploadState.uploading => name != null ? s.uploadingSubtitle(name) : '',
+        _UploadState.done => s.uploadDoneSubtitle(name ?? ''),
+        _UploadState.error => s.uploadErrorSubtitle,
       };
 }
 
@@ -702,14 +703,14 @@ class _SecondaryButton extends StatelessWidget {
 
 // ── URL Input Bottom Sheet ────────────────────────────────────────────────────
 
-class _UrlInputSheet extends StatefulWidget {
+class _UrlInputSheet extends ConsumerStatefulWidget {
   const _UrlInputSheet();
 
   @override
-  State<_UrlInputSheet> createState() => _UrlInputSheetState();
+  ConsumerState<_UrlInputSheet> createState() => _UrlInputSheetState();
 }
 
-class _UrlInputSheetState extends State<_UrlInputSheet> {
+class _UrlInputSheetState extends ConsumerState<_UrlInputSheet> {
   final _controller = TextEditingController();
 
   @override
@@ -720,6 +721,7 @@ class _UrlInputSheetState extends State<_UrlInputSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final s = ref.watch(appStringsProvider);
     final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
     return Container(
       margin: EdgeInsets.only(
@@ -743,7 +745,7 @@ class _UrlInputSheetState extends State<_UrlInputSheet> {
                 const Icon(Icons.link_rounded, color: AppColors.primary, size: 22),
                 const SizedBox(width: 10),
                 Text(
-                  'URL Yapıştır',
+                  s.urlPaste,
                   style: AppTypography.titleLarge.copyWith(fontSize: 16),
                 ),
               ],
@@ -760,7 +762,7 @@ class _UrlInputSheetState extends State<_UrlInputSheet> {
                 autofocus: true,
                 style: AppTypography.bodyMedium,
                 decoration: InputDecoration(
-                  hintText: 'https://example.com/kitap.epub',
+                  hintText: 'https://example.com/book.epub',
                   hintStyle: AppTypography.bodyMedium
                       .copyWith(color: context.vColors.textHint),
                   prefixIcon: Icon(
@@ -793,7 +795,7 @@ class _UrlInputSheetState extends State<_UrlInputSheet> {
                   elevation: 0,
                 ),
                 child: Text(
-                  'İçe Aktar',
+                  s.importButton,
                   style: AppTypography.labelSmall.copyWith(
                     color: AppColors.backgroundDeep,
                     fontWeight: FontWeight.w700,
@@ -811,28 +813,29 @@ class _UrlInputSheetState extends State<_UrlInputSheet> {
 
 // ── Cloud Import Bottom Sheet ─────────────────────────────────────────────────
 
-class _CloudImportSheet extends StatelessWidget {
+class _CloudImportSheet extends ConsumerWidget {
   const _CloudImportSheet();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(appStringsProvider);
     final sources = [
       _CloudSource(
         icon: Icons.folder_outlined,
         label: 'Google Drive',
-        subtitle: 'Drive hesabınızdan içe aktarın',
+        subtitle: s.driveSub,
         color: const Color(0xFF4285F4),
       ),
       _CloudSource(
         icon: Icons.cloud_outlined,
         label: 'Dropbox',
-        subtitle: 'Dropbox klasörünüzden seçin',
+        subtitle: s.dropboxSub,
         color: const Color(0xFF0061FF),
       ),
       _CloudSource(
         icon: Icons.phone_iphone_rounded,
         label: 'iCloud Drive',
-        subtitle: 'Apple iCloud dosyalarınız',
+        subtitle: s.icloudSub,
         color: const Color(0xFF2997FF),
       ),
     ];
@@ -856,7 +859,7 @@ class _CloudImportSheet extends StatelessWidget {
                     color: AppColors.primary, size: 22),
                 const SizedBox(width: 10),
                 Text(
-                  'Buluttan İçe Aktar',
+                  s.cloudImport,
                   style: AppTypography.titleLarge.copyWith(fontSize: 16),
                 ),
               ],
