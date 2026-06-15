@@ -2,12 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:vibe_tale/core/providers/app_settings_provider.dart';
 import 'package:vibe_tale/core/router/app_router.dart';
 import 'package:vibe_tale/core/theme/app_theme.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await Supabase.initialize(
+    url: const String.fromEnvironment(
+      'SUPABASE_URL',
+      defaultValue: 'https://your-project.supabase.co',
+    ),
+    anonKey: const String.fromEnvironment(
+      'SUPABASE_ANON_KEY',
+      defaultValue: 'your-anon-key',
+    ),
+  );
 
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
@@ -33,6 +45,7 @@ class VibeTaleApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeProvider);
     final language = ref.watch(appLanguageProvider);
+    final router = ref.watch(appRouterProvider);
 
     return MaterialApp.router(
       title: 'VibeTale',
@@ -47,7 +60,7 @@ class VibeTaleApp extends ConsumerWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      routerConfig: appRouter,
+      routerConfig: router,
     );
   }
 }

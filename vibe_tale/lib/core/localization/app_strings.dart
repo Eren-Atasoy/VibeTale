@@ -179,6 +179,19 @@ class AppStrings {
   String get alreadyMember => _isTr ? 'Zaten üye misin? ' : 'Already a member? ';
   String get loginAction => _isTr ? 'Giriş Yap' : 'Log In';
 
+  // ── Auth — Forgot Password ────────────────────────────────────────────────
+  String get forgotPasswordTitle => _isTr ? 'Şifreni Mi Unuttun?' : 'Forgot Your Password?';
+  String get forgotPasswordSubtitle => _isTr
+      ? 'E-posta adresini gir, sıfırlama bağlantısı gönderelim.'
+      : 'Enter your email and we\'ll send a reset link.';
+  String get sendResetLink => _isTr ? 'BAĞLANTI GÖNDER' : 'SEND RESET LINK';
+  String get emailSentTitle => _isTr ? 'E-posta Gönderildi!' : 'Email Sent!';
+  String get emailSentSubtitle => _isTr
+      ? 'Gelen kutunu kontrol et ve sıfırlama bağlantısına tıkla.'
+      : 'Check your inbox and click the reset link.';
+  String get backToLogin => _isTr ? 'Girişe Geri Dön' : 'Back to Login';
+  String get authError => _isTr ? 'Bir hata oluştu' : 'An error occurred';
+
   // ── Auth — Validation ─────────────────────────────────────────────────────
   String get errEmailEmpty =>
       _isTr ? 'E-posta adresi boş bırakılamaz.' : 'Email cannot be empty.';

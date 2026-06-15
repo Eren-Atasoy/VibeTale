@@ -159,6 +159,32 @@ class _ReadingStatsScreenState extends ConsumerState<ReadingStatsScreen>
   late final AnimationController _podiumController;
   late final Animation<double> _podiumAnim;
 
+  // Period-adjusted data — weekly/monthly show proportionally fewer pages
+  List<LeaderboardUser> get _periodUsers {
+    double scale;
+    switch (_period) {
+      case _Period.weekly:
+        scale = 0.06; // ~weekly slice of yearly
+      case _Period.monthly:
+        scale = 0.25; // ~monthly slice
+      case _Period.allTime:
+        scale = 1.0;
+    }
+    return _leaderboardUsers
+        .map((u) => LeaderboardUser(
+              rank: u.rank,
+              name: u.name,
+              username: u.username,
+              avatarSeed: u.avatarSeed,
+              booksRead: (u.booksRead * scale).ceil(),
+              pagesRead: (u.pagesRead * scale).ceil(),
+              readingStreak: u.readingStreak,
+              badge: u.badge,
+              isCurrentUser: u.isCurrentUser,
+            ))
+        .toList();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -202,7 +228,7 @@ class _ReadingStatsScreenState extends ConsumerState<ReadingStatsScreen>
               }),
               Expanded(
                 child: _LeaderboardBody(
-                  users: _leaderboardUsers,
+                  users: _periodUsers,
                   podiumAnim: _podiumAnim,
                 ),
               ),

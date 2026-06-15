@@ -6,8 +6,8 @@ import 'package:vibe_tale/core/constants/app_dimensions.dart';
 import 'package:vibe_tale/core/constants/app_typography.dart';
 import 'package:vibe_tale/core/localization/app_strings.dart';
 import 'package:vibe_tale/core/providers/app_settings_provider.dart';
-import 'package:vibe_tale/core/router/app_router.dart';
 import 'package:vibe_tale/core/theme/app_theme_colors.dart';
+import 'package:vibe_tale/features/auth/application/auth_provider.dart';
 import 'package:vibe_tale/core/widgets/neon_button.dart';
 import 'package:vibe_tale/core/widgets/themed_background.dart';
 import 'package:vibe_tale/core/widgets/vibe_text_field.dart';
@@ -93,15 +93,38 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     return emailErr == null && usernameErr == null && passErr == null;
   }
 
-  void _handleSignup() {
+  Future<void> _handleSignup() async {
     if (!_validateAll()) return;
     setState(() => _isLoading = true);
-    // TODO: wire up auth provider / REST API
-    Future.delayed(const Duration(seconds: 1), () {
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-      context.go(AppRoutes.home);
-    });
+
+    final success = await ref.read(authNotifierProvider.notifier).signUp(
+      email: _emailController.text.trim(),
+      password: _passwordController.text,
+      username: _usernameController.text.trim(),
+    );
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (!success) {
+      final authState = ref.read(authNotifierProvider);
+      final msg = authState is AuthError ? authState.message : 'Kayıt başarısız.';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(msg),
+          backgroundColor: authState is AuthError &&
+                  authState.message.contains('doğrulayın')
+              ? AppColors.primary
+              : Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppDimensions.radiusSM),
+          ),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
+    // On success: GoRouter redirect fires automatically via _AuthChangeNotifier
   }
 
   @override

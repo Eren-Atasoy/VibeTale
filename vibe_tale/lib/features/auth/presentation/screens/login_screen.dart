@@ -9,6 +9,7 @@ import 'package:vibe_tale/core/localization/app_strings.dart';
 import 'package:vibe_tale/core/providers/app_settings_provider.dart';
 import 'package:vibe_tale/core/router/app_router.dart';
 import 'package:vibe_tale/core/theme/app_theme_colors.dart';
+import 'package:vibe_tale/features/auth/application/auth_provider.dart';
 import 'package:vibe_tale/core/widgets/neon_button.dart';
 import 'package:vibe_tale/core/widgets/themed_background.dart';
 import 'package:vibe_tale/core/widgets/vibe_text_field.dart';
@@ -75,15 +76,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return emailErr == null && passErr == null;
   }
 
-  void _handleLogin() {
+  Future<void> _handleLogin() async {
     if (!_validateAll()) return;
     setState(() => _isLoading = true);
-    // TODO: wire up auth provider / REST API
-    Future.delayed(const Duration(seconds: 1), () {
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-      context.go(AppRoutes.home);
-    });
+
+    final success = await ref.read(authNotifierProvider.notifier).signIn(
+      email: _emailController.text.trim(),
+      password: _passwordController.text,
+    );
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (!success) {
+      final authState = ref.read(authNotifierProvider);
+      final msg = authState is AuthError ? authState.message : 'Giriş başarısız.';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(msg),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppDimensions.radiusSM),
+          ),
+        ),
+      );
+    }
+    // On success: GoRouter redirect fires automatically via _AuthChangeNotifier
   }
 
   @override
@@ -292,7 +311,7 @@ class _FooterLinks extends ConsumerWidget {
     return Column(
       children: [
         GestureDetector(
-          onTap: () {},
+          onTap: () => context.push(AppRoutes.forgotPassword),
           child: Text(
             s.forgotPassword,
             style: AppTypography.bodyMedium.copyWith(

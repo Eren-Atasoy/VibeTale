@@ -12,33 +12,73 @@ import 'package:vibe_tale/core/providers/app_settings_provider.dart';
 import 'package:vibe_tale/core/theme/app_theme_colors.dart';
 import 'package:vibe_tale/core/widgets/neon_button.dart';
 import 'package:vibe_tale/core/widgets/themed_background.dart';
+import 'package:vibe_tale/features/library/application/books_provider.dart';
 import 'package:vibe_tale/features/library/domain/book_model.dart';
 
-class BookDetailsScreen extends ConsumerWidget {
+class BookDetailsScreen extends ConsumerStatefulWidget {
   const BookDetailsScreen({super.key, required this.bookId});
 
   final String bookId;
 
-  Book? _findBook() {
-    final all = [
-      DummyBooks.featured,
-      ...DummyBooks.haftaninOnerileri,
-      ...DummyBooks.karanlikGecmis,
-    ];
-    try {
-      return all.firstWhere((b) => b.id == bookId);
-    } on StateError {
-      return null;
-    }
+  @override
+  ConsumerState<BookDetailsScreen> createState() => _BookDetailsScreenState();
+}
+
+class _BookDetailsScreenState extends ConsumerState<BookDetailsScreen> {
+  bool _isBookmarked = false;
+  bool _isInLibrary = false;
+
+  void _toggleBookmark() {
+    setState(() => _isBookmarked = !_isBookmarked);
+    HapticFeedback.lightImpact();
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(
+        _isBookmarked ? 'Yer imi eklendi' : 'Yer imi kaldırıldı',
+        style: AppTypography.bodyMedium.copyWith(color: AppColors.backgroundDeep),
+      ),
+      backgroundColor: AppColors.primary,
+      duration: const Duration(seconds: 1),
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppDimensions.radiusSM),
+      ),
+    ));
+  }
+
+  void _toggleLibrary() {
+    setState(() => _isInLibrary = !_isInLibrary);
+    HapticFeedback.lightImpact();
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(
+        _isInLibrary ? 'Kütüphaneye eklendi' : 'Kütüphaneden kaldırıldı',
+        style: AppTypography.bodyMedium.copyWith(color: AppColors.backgroundDeep),
+      ),
+      backgroundColor: AppColors.primary,
+      duration: const Duration(seconds: 1),
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppDimensions.radiusSM),
+      ),
+    ));
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final book = _findBook();
-    if (book == null) {
-      return _NotFoundView(bookId: bookId);
-    }
+  Widget build(BuildContext context) {
+    final bookAsync = ref.watch(bookProvider(widget.bookId));
 
+    return bookAsync.when(
+      loading: () => Scaffold(
+        backgroundColor: AppColors.backgroundDeep,
+        body: const Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
+      ),
+      error: (_, _) => _NotFoundView(bookId: widget.bookId),
+      data: (book) => _buildContent(context, book),
+    );
+  }
+
+  Widget _buildContent(BuildContext context, Book book) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -53,15 +93,22 @@ class BookDetailsScreen extends ConsumerWidget {
         extendBody: true,
         body: Stack(
           children: [
-            // Blurred cover as full-screen background
             _BlurredHeroBackground(imageUrl: book.coverUrl),
-            // Dark overlay
             Container(color: AppColors.backgroundDeep.withValues(alpha: 0.75)),
-            // Content
             CustomScrollView(
               slivers: [
-                _CoverAppBar(book: book),
-                SliverToBoxAdapter(child: _DetailsPanel(book: book)),
+                _CoverAppBar(
+                  book: book,
+                  isBookmarked: _isBookmarked,
+                  onBookmarkTap: _toggleBookmark,
+                ),
+                SliverToBoxAdapter(
+                  child: _DetailsPanel(
+                    book: book,
+                    isInLibrary: _isInLibrary,
+                    onLibraryTap: _toggleLibrary,
+                  ),
+                ),
               ],
             ),
           ],
@@ -108,9 +155,15 @@ class _BlurredHeroBackground extends StatelessWidget {
 // ── Cover AppBar (collapsible) ────────────────────────────────────────────────
 
 class _CoverAppBar extends StatelessWidget {
-  const _CoverAppBar({required this.book});
+  const _CoverAppBar({
+    required this.book,
+    required this.isBookmarked,
+    required this.onBookmarkTap,
+  });
 
   final Book book;
+  final bool isBookmarked;
+  final VoidCallback onBookmarkTap;
 
   @override
   Widget build(BuildContext context) {
@@ -142,12 +195,14 @@ class _CoverAppBar extends StatelessWidget {
             shape: BoxShape.circle,
           ),
           child: IconButton(
-            icon: const Icon(
-              Icons.bookmark_border_rounded,
-              color: AppColors.textPrimary,
+            icon: Icon(
+              isBookmarked
+                  ? Icons.bookmark_rounded
+                  : Icons.bookmark_border_rounded,
+              color: isBookmarked ? AppColors.primary : AppColors.textPrimary,
               size: 20,
             ),
-            onPressed: () {},
+            onPressed: onBookmarkTap,
           ),
         ),
       ],
@@ -202,9 +257,15 @@ class _CoverAppBar extends StatelessWidget {
 // ── Details Panel ─────────────────────────────────────────────────────────────
 
 class _DetailsPanel extends ConsumerWidget {
-  const _DetailsPanel({required this.book});
+  const _DetailsPanel({
+    required this.book,
+    required this.isInLibrary,
+    required this.onLibraryTap,
+  });
 
   final Book book;
+  final bool isInLibrary;
+  final VoidCallback onLibraryTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -256,9 +317,9 @@ class _DetailsPanel extends ConsumerWidget {
           ),
           const SizedBox(height: AppDimensions.spaceMD),
           NeonButton.outlined(
-            label: s.addToLibrary,
-            onPressed: () {},
-            icon: Icons.add_rounded,
+            label: isInLibrary ? 'Kütüphanede ✓' : s.addToLibrary,
+            onPressed: onLibraryTap,
+            icon: isInLibrary ? Icons.check_rounded : Icons.add_rounded,
           ),
         ],
       ),

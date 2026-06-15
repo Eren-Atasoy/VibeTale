@@ -1,0 +1,34 @@
+# ── AI / Vibe coding tools ────────────────────────────────────────────────────
+everything-claude-code/
+.claude/
+VIBETALE_GUIDELINES.md
+images/
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Flutter / Dart ────────────────────────────────────────────────────────────
+vibe_tale/.dart_tool/
+vibe_tale/.flutter-plugins
+vibe_tale/.flutter-plugins-dependencies
+vibe_tale/build/
+vibe_tale/.packages
+
+# ── Android ───────────────────────────────────────────────────────────────────
+vibe_tale/android/.gradle/
+vibe_tale/android/local.properties
+vibe_tale/android/key.properties
+*.jks
+*.keystore
+
+# ── iOS ───────────────────────────────────────────────────────────────────────
+vibe_tale/ios/Pods/
+vibe_tale/ios/.symlinks/
+vibe_tale/ios/Flutter/Flutter.framework/
+vibe_tale/ios/Flutter/Flutter.podspec
+
+# ── IDE ───────────────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.iml

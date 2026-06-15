@@ -10,6 +10,7 @@ import 'package:vibe_tale/core/theme/app_theme_colors.dart';
 import 'package:vibe_tale/core/widgets/book_cover_card.dart';
 import 'package:vibe_tale/core/widgets/themed_background.dart';
 import 'package:vibe_tale/features/home/presentation/screens/home_screen.dart';
+import 'package:vibe_tale/features/library/application/books_provider.dart';
 import 'package:vibe_tale/features/library/domain/book_model.dart';
 
 // ── Library Screen (Personal Collection) ─────────────────────────────────────
@@ -39,6 +40,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
 
   @override
   Widget build(BuildContext context) {
+    final booksAsync = ref.watch(booksProvider);
+
     return ThemedBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -51,22 +54,28 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
               _LibraryTopBar(),
               _LibraryTabBar(controller: _tabController),
               Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _ReadingTab(
-                      books: DummyBooks.currentlyReading,
-                      onBookTap: (b) => context.push('/book/${b.id}'),
-                    ),
-                    _CompletedTab(
-                      books: DummyBooks.completed,
-                      onBookTap: (b) => context.push('/book/${b.id}'),
-                    ),
-                    _SavedTab(
-                      books: DummyBooks.saved,
-                      onBookTap: (b) => context.push('/book/${b.id}'),
-                    ),
-                  ],
+                child: booksAsync.when(
+                  loading: () => const Center(
+                    child: CircularProgressIndicator(color: AppColors.primary),
+                  ),
+                  error: (e, _) => _ErrorState(message: e.toString()),
+                  data: (books) => TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _ReadingTab(
+                        books: books,
+                        onBookTap: (b) => context.push('/book/${b.id}'),
+                      ),
+                      _CompletedTab(
+                        books: const [],
+                        onBookTap: (b) => context.push('/book/${b.id}'),
+                      ),
+                      _SavedTab(
+                        books: const [],
+                        onBookTap: (b) => context.push('/book/${b.id}'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -123,7 +132,7 @@ class _LibraryTopBar extends ConsumerWidget {
               border: Border.all(color: c.glassBorder),
             ),
             child: Text(
-              '${DummyBooks.currentlyReading.length + DummyBooks.completed.length + DummyBooks.saved.length} ${ref.watch(appStringsProvider).books}',
+              '${ref.watch(booksProvider).valueOrNull?.length ?? 0} ${ref.watch(appStringsProvider).books}',
               style: AppTypography.tagLabel.copyWith(
                 color: c.textSecondary,
                 fontSize: 11,
@@ -412,7 +421,7 @@ class _GridBookCard extends StatelessWidget {
                 imageUrl: book.coverUrl,
                 fit: BoxFit.cover,
                 width: double.infinity,
-                placeholder: (_, __) => Container(
+                placeholder: (_, _) => Container(
                   color: context.vColors.cardElevated,
                   child: const Center(
                     child: CircularProgressIndicator(
@@ -421,7 +430,7 @@ class _GridBookCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                errorWidget: (_, __, ___) => Container(
+                errorWidget: (_, _, _) => Container(
                   color: context.vColors.cardElevated,
                   child: Icon(
                     Icons.book_outlined,
@@ -547,6 +556,43 @@ class _SavedCard extends StatelessWidget {
               Icons.bookmark_rounded,
               color: AppColors.primary,
               size: 22,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Error State ───────────────────────────────────────────────────────────────
+
+class _ErrorState extends StatelessWidget {
+  const _ErrorState({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.vColors;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppDimensions.spaceXXL),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.wifi_off_rounded, color: c.textSecondary, size: 48),
+            const SizedBox(height: AppDimensions.spaceMD),
+            Text(
+              'Bağlantı hatası',
+              style: AppTypography.titleMedium.copyWith(fontSize: 15),
+            ),
+            const SizedBox(height: AppDimensions.spaceSM),
+            Text(
+              message,
+              style: AppTypography.bodyMedium.copyWith(fontSize: 12),
+              textAlign: TextAlign.center,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),

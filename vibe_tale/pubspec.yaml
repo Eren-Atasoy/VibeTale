@@ -33,6 +33,11 @@ dependencies:
 
   # Network & Images
   cached_network_image: ^3.4.1
+  dio: ^5.7.0
+
+  # Auth & Secure Storage
+  supabase_flutter: ^2.8.4
+  flutter_secure_storage: ^9.2.2
 
   # Charts
   fl_chart: ^0.69.2
