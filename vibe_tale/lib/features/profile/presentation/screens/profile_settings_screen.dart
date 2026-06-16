@@ -9,6 +9,7 @@ import 'package:vibe_tale/core/router/app_router.dart';
 import 'package:vibe_tale/core/theme/app_theme_colors.dart';
 import 'package:vibe_tale/core/widgets/glass_card.dart';
 import 'package:vibe_tale/core/widgets/themed_background.dart';
+import 'package:vibe_tale/features/auth/application/auth_provider.dart';
 
 class ProfileSettingsScreen extends ConsumerStatefulWidget {
   const ProfileSettingsScreen({super.key});
@@ -275,9 +276,12 @@ class _ProfileSettingsScreenState
             ),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.of(ctx).pop();
-              context.go(AppRoutes.login);
+              await ref.read(authNotifierProvider.notifier).signOut();
+              // Auth guard redirects to /login once the session clears, but
+              // navigate explicitly as a fallback.
+              if (mounted) context.go(AppRoutes.login);
             },
             child: Text(
               s.logout,

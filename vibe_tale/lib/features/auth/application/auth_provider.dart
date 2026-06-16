@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:vibe_tale/core/error/auth_error.dart';
 import 'package:vibe_tale/features/auth/data/auth_repository.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>(
@@ -27,8 +28,8 @@ final class AuthLoading extends AuthActionState {}
 final class AuthSuccess extends AuthActionState {}
 
 final class AuthError extends AuthActionState {
-  AuthError(this.message);
-  final String message;
+  AuthError(this.code);
+  final AuthErrorCode code;
 }
 
 class AuthNotifier extends Notifier<AuthActionState> {
@@ -43,8 +44,11 @@ class AuthNotifier extends Notifier<AuthActionState> {
       await _repo.signIn(email: email, password: password);
       state = AuthSuccess();
       return true;
-    } catch (e) {
-      state = AuthError(e.toString());
+    } on AuthFailure catch (f) {
+      state = AuthError(f.code);
+      return false;
+    } catch (_) {
+      state = AuthError(AuthErrorCode.unknown);
       return false;
     }
   }
@@ -59,8 +63,11 @@ class AuthNotifier extends Notifier<AuthActionState> {
       await _repo.signUp(email: email, password: password, username: username);
       state = AuthSuccess();
       return true;
-    } catch (e) {
-      state = AuthError(e.toString());
+    } on AuthFailure catch (f) {
+      state = AuthError(f.code);
+      return false;
+    } catch (_) {
+      state = AuthError(AuthErrorCode.unknown);
       return false;
     }
   }
@@ -71,8 +78,11 @@ class AuthNotifier extends Notifier<AuthActionState> {
       await _repo.resetPasswordForEmail(email);
       state = AuthSuccess();
       return true;
-    } catch (e) {
-      state = AuthError(e.toString());
+    } on AuthFailure catch (f) {
+      state = AuthError(f.code);
+      return false;
+    } catch (_) {
+      state = AuthError(AuthErrorCode.unknown);
       return false;
     }
   }

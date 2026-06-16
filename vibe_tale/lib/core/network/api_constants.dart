@@ -21,4 +21,9 @@ abstract final class ApiConstants {
   static const String createBookmark = '/reading/bookmarks';
   static String listBookmarks(String bookId) => '/reading/bookmarks/$bookId';
   static String deleteBookmark(String id) => '/reading/bookmarks/$id';
+
+  // Reading sessions
+  static const String createSession = '/reading/sessions';
+  static String updateSession(String id) => '/reading/sessions/$id';
+  static const String listSessions = '/reading/sessions';
 }

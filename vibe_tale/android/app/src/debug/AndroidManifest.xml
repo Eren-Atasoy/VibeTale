@@ -4,4 +4,8 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- DEBUG ONLY: allow cleartext HTTP so the app can reach the local
+         backend (http://10.0.2.2:8000) and local Supabase (http://10.0.2.2:54321).
+         Release builds remain HTTPS-only. -->
+    <application android:usesCleartextTraffic="true" />
 </manifest>

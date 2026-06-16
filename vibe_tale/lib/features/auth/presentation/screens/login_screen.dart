@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:vibe_tale/core/constants/app_colors.dart';
 import 'package:vibe_tale/core/constants/app_dimensions.dart';
 import 'package:vibe_tale/core/constants/app_typography.dart';
+import 'package:vibe_tale/core/error/auth_error.dart';
 import 'package:vibe_tale/core/localization/app_strings.dart';
 import 'package:vibe_tale/core/providers/app_settings_provider.dart';
 import 'package:vibe_tale/core/router/app_router.dart';
@@ -80,17 +81,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (!_validateAll()) return;
     setState(() => _isLoading = true);
 
-    final success = await ref.read(authNotifierProvider.notifier).signIn(
-      email: _emailController.text.trim(),
-      password: _passwordController.text,
-    );
+    final success = await ref
+        .read(authNotifierProvider.notifier)
+        .signIn(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+        );
 
     if (!mounted) return;
     setState(() => _isLoading = false);
 
     if (!success) {
+      final s = ref.read(appStringsProvider);
       final authState = ref.read(authNotifierProvider);
-      final msg = authState is AuthError ? authState.message : 'Giriş başarısız.';
+      final msg = s.authErrorMessage(
+        authState is AuthError ? authState.code : AuthErrorCode.unknown,
+      );
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(msg),
@@ -146,8 +152,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         onPasswordChanged: _onPasswordChanged,
                         onLogin: _handleLogin,
                       ),
-                      const SizedBox(height: AppDimensions.spaceLG),
-                      _SocialSection(),
                       const Spacer(),
                       _FooterLinks(),
                       const SizedBox(height: AppDimensions.spaceLG),
@@ -260,48 +264,6 @@ class _FormSection extends ConsumerWidget {
   }
 }
 
-// ── Social Section ────────────────────────────────────────────────────────────
-
-class _SocialSection extends ConsumerWidget {
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final s = ref.watch(appStringsProvider);
-    final c = context.vColors;
-    return Column(
-      children: [
-        _DividerWithText(label: s.orContinueWith),
-        const SizedBox(height: AppDimensions.spaceLG),
-        Row(
-          children: [
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: c.inputFill,
-                shape: BoxShape.circle,
-                border: Border.all(color: c.glassBorder, width: 1),
-              ),
-              child: Icon(
-                Icons.face_outlined,
-                color: c.textSecondary,
-                size: 22,
-              ),
-            ),
-            const SizedBox(width: AppDimensions.spaceMD),
-            Expanded(
-              child: NeonButton.outlined(
-                label: s.magicLink,
-                onPressed: () {},
-                icon: Icons.mail_outline_rounded,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
 // ── Footer Links ──────────────────────────────────────────────────────────────
 
 class _FooterLinks extends ConsumerWidget {
@@ -340,35 +302,6 @@ class _FooterLinks extends ConsumerWidget {
             ),
           ),
         ),
-      ],
-    );
-  }
-}
-
-// ── Divider with Label ────────────────────────────────────────────────────────
-
-class _DividerWithText extends StatelessWidget {
-  const _DividerWithText({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(child: Container(height: 0.5, color: context.vColors.glassBorder)),
-        Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppDimensions.spaceMD,
-          ),
-          child: Text(
-            label,
-            style: AppTypography.labelSmall.copyWith(
-              color: context.vColors.textSecondary,
-            ),
-          ),
-        ),
-        Expanded(child: Container(height: 0.5, color: context.vColors.glassBorder)),
       ],
     );
   }

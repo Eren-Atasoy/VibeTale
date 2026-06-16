@@ -88,6 +88,8 @@ class ReadingRepository {
   Future<Map<String, dynamic>> createBookmark({
     required String bookId,
     required String chunkId,
+    required int chapterNumber,
+    required int offset,
     String? note,
   }) async {
     try {
@@ -96,10 +98,60 @@ class ReadingRepository {
         data: {
           'book_id': bookId,
           'chunk_id': chunkId,
+          'chapter_number': chapterNumber,
+          'offset': offset,
           if (note != null) 'note': note,
         },
       );
       return response.data!;
+    } on DioException catch (e) {
+      throw mapDioError(e);
+    }
+  }
+
+  // ── Reading sessions ────────────────────────────────────────────────────────
+
+  /// Starts a reading session and returns its id.
+  Future<String?> createSession(String bookId) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        ApiConstants.createSession,
+        data: {'book_id': bookId},
+      );
+      return response.data?['id'] as String?;
+    } on DioException catch (e) {
+      throw mapDioError(e);
+    }
+  }
+
+  /// Ends/updates a reading session with elapsed durations.
+  Future<void> updateSession({
+    required String sessionId,
+    required int durationSeconds,
+    int? immersiveModeSeconds,
+  }) async {
+    try {
+      await _dio.put<void>(
+        ApiConstants.updateSession(sessionId),
+        data: {
+          'ended_at': DateTime.now().toUtc().toIso8601String(),
+          'duration_seconds': durationSeconds,
+          if (immersiveModeSeconds != null)
+            'immersive_mode_seconds': immersiveModeSeconds,
+        },
+      );
+    } on DioException catch (e) {
+      throw mapDioError(e);
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> listSessions() async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        ApiConstants.listSessions,
+      );
+      final items = response.data?['sessions'] as List<dynamic>? ?? [];
+      return items.cast<Map<String, dynamic>>();
     } on DioException catch (e) {
       throw mapDioError(e);
     }

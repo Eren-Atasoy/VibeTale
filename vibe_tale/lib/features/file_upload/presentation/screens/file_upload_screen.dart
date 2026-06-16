@@ -10,6 +10,7 @@ import 'package:vibe_tale/core/localization/app_strings.dart';
 import 'package:vibe_tale/core/providers/app_settings_provider.dart';
 import 'package:vibe_tale/core/theme/app_theme_colors.dart';
 import 'package:vibe_tale/core/widgets/themed_background.dart';
+import 'package:vibe_tale/features/library/application/books_provider.dart';
 // ── File Upload Screen ────────────────────────────────────────────────────────
 
 class FileUploadScreen extends ConsumerStatefulWidget {
@@ -21,11 +22,17 @@ class FileUploadScreen extends ConsumerStatefulWidget {
 
 enum _UploadState { idle, picked, uploading, done, error }
 
+/// Formats the backend can ingest — validated on the client for instant
+/// feedback before any upload round-trip. Keep in sync with the backend
+/// file validator.
+const _supportedExtensions = {'epub', 'pdf', 'docx', 'txt'};
+
 class _FileUploadScreenState extends ConsumerState<FileUploadScreen>
     with SingleTickerProviderStateMixin {
   _UploadState _state = _UploadState.idle;
   String? _fileName;
   double _progress = 0;
+  String? _uploadedBookId;
 
   late final AnimationController _pulseController;
   late final Animation<double> _pulseAnim;
@@ -48,45 +55,84 @@ class _FileUploadScreenState extends ConsumerState<FileUploadScreen>
     super.dispose();
   }
 
-  // Simulate picking a file (real impl would use file_picker package)
   Future<void> _pickFile() async {
     HapticFeedback.lightImpact();
 
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['epub', 'pdf', 'docx', 'txt'],
+        allowedExtensions: _supportedExtensions.toList(),
       );
 
-      if (result != null && result.files.isNotEmpty) {
-        setState(() {
-          _state = _UploadState.picked;
-          _fileName = result.files.first.name;
-        });
-        await Future.delayed(const Duration(milliseconds: 400));
-        await _simulateUpload();
+      if (result == null || result.files.isEmpty) return;
+
+      final picked = result.files.first;
+      final path = picked.path;
+      if (path == null) {
+        setState(() => _state = _UploadState.error);
+        return;
       }
-    } catch (e) {
+
+      // Guard against files slipping past the picker filter (e.g. "all files"
+      // mode on some platforms). Reject unsupported formats before uploading.
+      final extension = (picked.extension ?? picked.name.split('.').last)
+          .toLowerCase();
+      if (!_supportedExtensions.contains(extension)) {
+        if (!mounted) return;
+        _showUnsupportedFormat();
+        setState(() => _state = _UploadState.idle);
+        return;
+      }
+
+      setState(() {
+        _state = _UploadState.picked;
+        _fileName = picked.name;
+      });
+      await Future.delayed(const Duration(milliseconds: 300));
+      await _uploadFile(path, picked.name);
+    } on Exception {
       if (mounted) {
-        setState(() {
-          _state = _UploadState.error;
-        });
+        setState(() => _state = _UploadState.error);
       }
     }
   }
 
-  Future<void> _simulateUpload() async {
+  void _showUnsupportedFormat() {
+    final s = ref.read(appStringsProvider);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(s.unsupportedFormat),
+        backgroundColor: AppColors.error,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusSM),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _uploadFile(String path, String fileName) async {
     setState(() {
       _state = _UploadState.uploading;
       _progress = 0;
     });
-    for (int i = 1; i <= 20; i++) {
-      await Future.delayed(const Duration(milliseconds: 80));
+    try {
+      final book = await ref
+          .read(bookRepositoryProvider)
+          .uploadBook(path, fileName);
       if (!mounted) return;
-      setState(() => _progress = i / 20);
+      // Refresh the library so the new book appears.
+      ref.invalidate(booksProvider);
+      setState(() {
+        _uploadedBookId = book.id;
+        _progress = 1;
+        _state = _UploadState.done;
+      });
+      HapticFeedback.mediumImpact();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _state = _UploadState.error);
     }
-    setState(() => _state = _UploadState.done);
-    HapticFeedback.mediumImpact();
   }
 
   void _reset() {
@@ -122,31 +168,15 @@ class _FileUploadScreenState extends ConsumerState<FileUploadScreen>
                     pulseAnim: _pulseAnim,
                     onPickFile: _pickFile,
                     onReset: _reset,
-                    onFinish: () => context.pop(),
+                    onFinish: () {
+                      final id = _uploadedBookId;
+                      if (id != null) {
+                        context.pushReplacement('/vibe-analysis/$id');
+                      } else {
+                        context.pop();
+                      }
+                    },
                   ),
-                ),
-
-                const SizedBox(height: AppDimensions.spaceLG),
-
-                // ── Secondary Import Options
-                Row(
-                  children: [
-                    Expanded(
-                      child: _SecondaryButton(
-                        icon: Icons.link_rounded,
-                        label: s.urlPaste,
-                        onTap: () => _showUrlSheet(context),
-                      ),
-                    ),
-                    const SizedBox(width: AppDimensions.spaceMD),
-                    Expanded(
-                      child: _SecondaryButton(
-                        icon: Icons.cloud_download_outlined,
-                        label: s.cloudImport,
-                        onTap: () => _showCloudSheet(context),
-                      ),
-                    ),
-                  ],
                 ),
 
                 const SizedBox(height: AppDimensions.spaceLG),
@@ -169,26 +199,6 @@ class _FileUploadScreenState extends ConsumerState<FileUploadScreen>
       ),
     );
   }
-
-  void _showUrlSheet(BuildContext context) {
-    HapticFeedback.selectionClick();
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => const _UrlInputSheet(),
-    );
-  }
-
-  void _showCloudSheet(BuildContext context) {
-    HapticFeedback.selectionClick();
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => const _CloudImportSheet(),
-    );
-  }
 }
 
 // ── App Bar ───────────────────────────────────────────────────────────────────
@@ -204,7 +214,10 @@ class _AppBar extends ConsumerWidget implements PreferredSizeWidget {
       backgroundColor: Colors.transparent,
       elevation: 0,
       leading: IconButton(
-        icon: Icon(Icons.arrow_back_rounded, color: context.vColors.textPrimary),
+        icon: Icon(
+          Icons.arrow_back_rounded,
+          color: context.vColors.textPrimary,
+        ),
         onPressed: () => context.pop(),
       ),
       title: Text(
@@ -267,11 +280,7 @@ class _UploadCard extends ConsumerWidget {
       child: Stack(
         children: [
           // ── Corner badge (top-right)
-          Positioned(
-            top: 14,
-            right: 14,
-            child: _CornerBadge(state: state),
-          ),
+          Positioned(top: 14, right: 14, child: _CornerBadge(state: state)),
 
           // ── Body content
           Padding(
@@ -324,13 +333,17 @@ class _UploadCard extends ConsumerWidget {
                   const SizedBox(height: AppDimensions.spaceLG),
                   // Progress bar
                   ClipRRect(
-                    borderRadius:
-                        BorderRadius.circular(AppDimensions.radiusPill),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusPill,
+                    ),
                     child: LinearProgressIndicator(
                       value: progress,
-                      backgroundColor:
-                          context.vColors.glassBorder.withValues(alpha: 0.3),
-                      valueColor: const AlwaysStoppedAnimation(AppColors.primary),
+                      backgroundColor: context.vColors.glassBorder.withValues(
+                        alpha: 0.3,
+                      ),
+                      valueColor: const AlwaysStoppedAnimation(
+                        AppColors.primary,
+                      ),
                       minHeight: 6,
                     ),
                   ),
@@ -349,10 +362,7 @@ class _UploadCard extends ConsumerWidget {
 
                 // CTA Button
                 if (state == _UploadState.idle || state == _UploadState.error)
-                  _PrimaryButton(
-                    label: s.browseFiles,
-                    onPressed: onPickFile,
-                  )
+                  _PrimaryButton(label: s.browseFiles, onPressed: onPickFile)
                 else if (state == _UploadState.done)
                   Column(
                     children: [
@@ -381,10 +391,7 @@ class _UploadCard extends ConsumerWidget {
                 if (state == _UploadState.idle)
                   _VibeEngineBadge(label: s.vibeEngineReady),
                 if (state == _UploadState.done)
-                  _VibeEngineBadge(
-                    label: s.vibeEngineAnalyzed,
-                    success: true,
-                  ),
+                  _VibeEngineBadge(label: s.vibeEngineAnalyzed, success: true),
               ],
             ),
           ),
@@ -394,12 +401,12 @@ class _UploadCard extends ConsumerWidget {
   }
 
   String _titleFor(AppStrings s, _UploadState state) => switch (state) {
-        _UploadState.idle => s.uploadTitle,
-        _UploadState.picked => s.uploadPreparing,
-        _UploadState.uploading => s.uploadUploading,
-        _UploadState.done => s.uploadDone,
-        _UploadState.error => s.uploadError,
-      };
+    _UploadState.idle => s.uploadTitle,
+    _UploadState.picked => s.uploadPreparing,
+    _UploadState.uploading => s.uploadUploading,
+    _UploadState.done => s.uploadDone,
+    _UploadState.error => s.uploadError,
+  };
 
   String _subtitleFor(AppStrings s, _UploadState state, String? name) =>
       switch (state) {
@@ -428,8 +435,7 @@ class _FileIcon extends StatelessWidget {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: AppColors.success.withValues(alpha: 0.15),
-          border:
-              Border.all(color: AppColors.success.withValues(alpha: 0.4)),
+          border: Border.all(color: AppColors.success.withValues(alpha: 0.4)),
         ),
         child: const Icon(
           Icons.check_rounded,
@@ -616,19 +622,20 @@ class _PrimaryButton extends StatelessWidget {
           HapticFeedback.mediumImpact();
           onPressed();
         },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: AppColors.backgroundDeep,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
-          ),
-          elevation: 0,
-          shadowColor: Colors.transparent,
-        ).copyWith(
-          overlayColor: WidgetStatePropertyAll(
-            AppColors.backgroundDeep.withValues(alpha: 0.08),
-          ),
-        ),
+        style:
+            ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.backgroundDeep,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
+              ),
+              elevation: 0,
+              shadowColor: Colors.transparent,
+            ).copyWith(
+              overlayColor: WidgetStatePropertyAll(
+                AppColors.backgroundDeep.withValues(alpha: 0.08),
+              ),
+            ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -650,292 +657,4 @@ class _PrimaryButton extends StatelessWidget {
       ),
     );
   }
-}
-
-// ── Secondary Button ──────────────────────────────────────────────────────────
-
-class _SecondaryButton extends StatelessWidget {
-  const _SecondaryButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.selectionClick();
-        onTap();
-      },
-      child: Container(
-        height: 52,
-        decoration: BoxDecoration(
-          color: context.vColors.glassFill,
-          borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
-          border: Border.all(color: context.vColors.glassBorder, width: 0.8),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: context.vColors.textPrimary, size: 18),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                label,
-                style: AppTypography.labelSmall.copyWith(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── URL Input Bottom Sheet ────────────────────────────────────────────────────
-
-class _UrlInputSheet extends ConsumerStatefulWidget {
-  const _UrlInputSheet();
-
-  @override
-  ConsumerState<_UrlInputSheet> createState() => _UrlInputSheetState();
-}
-
-class _UrlInputSheetState extends ConsumerState<_UrlInputSheet> {
-  final _controller = TextEditingController();
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final s = ref.watch(appStringsProvider);
-    final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
-    return Container(
-      margin: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        bottom: bottomPadding + 16,
-      ),
-      decoration: BoxDecoration(
-        color: context.vColors.cardSurface,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusLG),
-        border: Border.all(color: context.vColors.glassBorder),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(AppDimensions.spaceLG),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.link_rounded, color: AppColors.primary, size: 22),
-                const SizedBox(width: 10),
-                Text(
-                  s.urlPaste,
-                  style: AppTypography.titleLarge.copyWith(fontSize: 16),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppDimensions.spaceMD),
-            Container(
-              decoration: BoxDecoration(
-                color: context.vColors.inputFill,
-                borderRadius: BorderRadius.circular(AppDimensions.radiusMD),
-                border: Border.all(color: context.vColors.glassBorder),
-              ),
-              child: TextField(
-                controller: _controller,
-                autofocus: true,
-                style: AppTypography.bodyMedium,
-                decoration: InputDecoration(
-                  hintText: 'https://example.com/book.epub',
-                  hintStyle: AppTypography.bodyMedium
-                      .copyWith(color: context.vColors.textHint),
-                  prefixIcon: Icon(
-                    Icons.link_outlined,
-                    color: context.vColors.textSecondary,
-                    size: 20,
-                  ),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 14,
-                  ),
-                ),
-                keyboardType: TextInputType.url,
-              ),
-            ),
-            const SizedBox(height: AppDimensions.spaceMD),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
-                onPressed: () => Navigator.of(context).pop(),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.backgroundDeep,
-                  shape: RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius.circular(AppDimensions.radiusPill),
-                  ),
-                  elevation: 0,
-                ),
-                child: Text(
-                  s.importButton,
-                  style: AppTypography.labelSmall.copyWith(
-                    color: AppColors.backgroundDeep,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── Cloud Import Bottom Sheet ─────────────────────────────────────────────────
-
-class _CloudImportSheet extends ConsumerWidget {
-  const _CloudImportSheet();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final s = ref.watch(appStringsProvider);
-    final sources = [
-      _CloudSource(
-        icon: Icons.folder_outlined,
-        label: 'Google Drive',
-        subtitle: s.driveSub,
-        color: const Color(0xFF4285F4),
-      ),
-      _CloudSource(
-        icon: Icons.cloud_outlined,
-        label: 'Dropbox',
-        subtitle: s.dropboxSub,
-        color: const Color(0xFF0061FF),
-      ),
-      _CloudSource(
-        icon: Icons.phone_iphone_rounded,
-        label: 'iCloud Drive',
-        subtitle: s.icloudSub,
-        color: const Color(0xFF2997FF),
-      ),
-    ];
-
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      decoration: BoxDecoration(
-        color: context.vColors.cardSurface,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusLG),
-        border: Border.all(color: context.vColors.glassBorder),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(AppDimensions.spaceLG),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.cloud_download_outlined,
-                    color: AppColors.primary, size: 22),
-                const SizedBox(width: 10),
-                Text(
-                  s.cloudImport,
-                  style: AppTypography.titleLarge.copyWith(fontSize: 16),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppDimensions.spaceMD),
-            ...sources.map(
-              (s) => GestureDetector(
-                onTap: () => Navigator.of(context).pop(),
-                child: Container(
-                  margin: const EdgeInsets.only(bottom: AppDimensions.spaceSM),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppDimensions.spaceMD,
-                    vertical: 14,
-                  ),
-                  decoration: BoxDecoration(
-                    color: context.vColors.inputFill,
-                    borderRadius:
-                        BorderRadius.circular(AppDimensions.radiusMD),
-                    border: Border.all(color: context.vColors.glassBorder, width: 0.8),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: s.color.withValues(alpha: 0.15),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(s.icon, color: s.color, size: 20),
-                      ),
-                      const SizedBox(width: AppDimensions.spaceMD),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              s.label,
-                              style: AppTypography.titleMedium
-                                  .copyWith(fontSize: 14),
-                            ),
-                            Text(
-                              s.subtitle,
-                              style: AppTypography.bodyMedium
-                                  .copyWith(fontSize: 11),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Icon(
-                        Icons.arrow_forward_ios_rounded,
-                        color: context.vColors.textSecondary,
-                        size: 14,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _CloudSource {
-  const _CloudSource({
-    required this.icon,
-    required this.label,
-    required this.subtitle,
-    required this.color,
-  });
-
-  final IconData icon;
-  final String label;
-  final String subtitle;
-  final Color color;
 }

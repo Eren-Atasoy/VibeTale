@@ -1,3 +1,5 @@
+import 'package:vibe_tale/core/error/auth_error.dart';
+
 /// Simple bilingual string table for VibeTale (Turkish / English).
 /// Add new keys here as screens are translated.
 class AppStrings {
@@ -22,8 +24,9 @@ class AppStrings {
   String get popularAuthors => _isTr ? 'Popüler Yazarlar' : 'Popular Authors';
   String get searchHint =>
       _isTr ? 'Kitap, yazar veya kategori ara...' : 'Search books, authors...';
-  String get searchEmpty =>
-      _isTr ? 'Kitap, yazar veya kategori gir' : 'Enter a book, author or category';
+  String get searchEmpty => _isTr
+      ? 'Kitap, yazar veya kategori gir'
+      : 'Enter a book, author or category';
   String get searchCancel => _isTr ? 'İptal' : 'Cancel';
   String get popular => _isTr ? 'Popüler' : 'Popular';
 
@@ -52,11 +55,13 @@ class AppStrings {
       _isTr ? 'Keşfet sekmesinden bir kitap seç' : 'Pick a book from Discover';
   String get completedEmpty =>
       _isTr ? 'Henüz kitap tamamlamadın' : 'No completed books yet';
-  String get completedEmptySub =>
-      _isTr ? 'Okuduğun kitaplar burada görünecek' : 'Finished books will appear here';
+  String get completedEmptySub => _isTr
+      ? 'Okuduğun kitaplar burada görünecek'
+      : 'Finished books will appear here';
   String get savedEmpty => _isTr ? 'Kaydedilen kitap yok' : 'No saved books';
-  String get savedEmptySub =>
-      _isTr ? 'Kitap detayından kaydet butonuna bas' : 'Tap Save on any book detail page';
+  String get savedEmptySub => _isTr
+      ? 'Kitap detayından kaydet butonuna bas'
+      : 'Tap Save on any book detail page';
   String get completed => _isTr ? '% tamamlandı' : '% done';
   String get pages => _isTr ? 'sf.' : 'pg.';
 
@@ -92,7 +97,8 @@ class AppStrings {
   String get sectionGeneral => _isTr ? 'GENEL' : 'GENERAL';
   String get sectionAccount => _isTr ? 'HESAP' : 'ACCOUNT';
   String get notifications => _isTr ? 'Bildirimler' : 'Notifications';
-  String get readingReminder => _isTr ? 'Okuma Hatırlatıcısı' : 'Reading Reminder';
+  String get readingReminder =>
+      _isTr ? 'Okuma Hatırlatıcısı' : 'Reading Reminder';
   String get theme => _isTr ? 'Tema' : 'Theme';
   String get themeDark => _isTr ? 'Karanlık' : 'Dark';
   String get themeLight => _isTr ? 'Aydınlık' : 'Light';
@@ -107,8 +113,9 @@ class AppStrings {
   String get about => _isTr ? 'Hakkında' : 'About';
   String get logout => _isTr ? 'Çıkış Yap' : 'Log Out';
   String get logoutConfirmTitle => _isTr ? 'Çıkış Yap' : 'Log Out';
-  String get logoutConfirmBody =>
-      _isTr ? 'Hesabından çıkmak istediğine emin misin?' : 'Are you sure you want to log out?';
+  String get logoutConfirmBody => _isTr
+      ? 'Hesabından çıkmak istediğine emin misin?'
+      : 'Are you sure you want to log out?';
   String get cancel => _isTr ? 'İptal' : 'Cancel';
 
   // ── Settings — Account Sheet ──────────────────────────────────────────────
@@ -154,9 +161,11 @@ class AppStrings {
   // ── Auth — Login ──────────────────────────────────────────────────────────
   String get appTagline =>
       _isTr ? 'SÜRÜKLEYİCİ KÜTÜPHANENİZ' : 'YOUR IMMERSIVE LIBRARY';
-  String get startYourJourney => _isTr ? 'Yolculuğuna Başla' : 'Start Your Journey';
-  String get loginSubtitle =>
-      _isTr ? 'Devam etmek için bilgilerini gir.' : 'Enter your credentials to continue.';
+  String get startYourJourney =>
+      _isTr ? 'Yolculuğuna Başla' : 'Start Your Journey';
+  String get loginSubtitle => _isTr
+      ? 'Devam etmek için bilgilerini gir.'
+      : 'Enter your credentials to continue.';
   String get emailLabel => _isTr ? 'E-posta Adresi' : 'Email Address';
   String get passwordLabel => _isTr ? 'Şifre' : 'Password';
   String get loginButton => _isTr ? 'GİRİŞ YAP' : 'LOG IN';
@@ -175,12 +184,15 @@ class AppStrings {
       : 'Let us organize your library.\nEnter your details to start personalizing.';
   String get usernameLabel => _isTr ? 'Kullanıcı Adı' : 'Username';
   String get continueButton => _isTr ? 'Devam Et  →' : 'Continue  →';
-  String get orSpeedUp => _isTr ? 'Veya şununla hızlandır:' : 'Or speed up with:';
-  String get alreadyMember => _isTr ? 'Zaten üye misin? ' : 'Already a member? ';
+  String get orSpeedUp =>
+      _isTr ? 'Veya şununla hızlandır:' : 'Or speed up with:';
+  String get alreadyMember =>
+      _isTr ? 'Zaten üye misin? ' : 'Already a member? ';
   String get loginAction => _isTr ? 'Giriş Yap' : 'Log In';
 
   // ── Auth — Forgot Password ────────────────────────────────────────────────
-  String get forgotPasswordTitle => _isTr ? 'Şifreni Mi Unuttun?' : 'Forgot Your Password?';
+  String get forgotPasswordTitle =>
+      _isTr ? 'Şifreni Mi Unuttun?' : 'Forgot Your Password?';
   String get forgotPasswordSubtitle => _isTr
       ? 'E-posta adresini gir, sıfırlama bağlantısı gönderelim.'
       : 'Enter your email and we\'ll send a reset link.';
@@ -195,22 +207,53 @@ class AppStrings {
   // ── Auth — Validation ─────────────────────────────────────────────────────
   String get errEmailEmpty =>
       _isTr ? 'E-posta adresi boş bırakılamaz.' : 'Email cannot be empty.';
-  String get errEmailInvalid =>
-      _isTr ? 'Geçerli bir e-posta adresi gir.' : 'Enter a valid email address.';
+  String get errEmailInvalid => _isTr
+      ? 'Geçerli bir e-posta adresi gir.'
+      : 'Enter a valid email address.';
   String get errPasswordEmpty =>
       _isTr ? 'Şifre boş bırakılamaz.' : 'Password cannot be empty.';
-  String get errPasswordMin6 =>
-      _isTr ? 'Şifre en az 6 karakter olmalı.' : 'Password must be at least 6 characters.';
-  String get errPasswordMin8 =>
-      _isTr ? 'Şifre en az 8 karakter olmalı.' : 'Password must be at least 8 characters.';
+  String get errPasswordMin6 => _isTr
+      ? 'Şifre en az 6 karakter olmalı.'
+      : 'Password must be at least 6 characters.';
+  String get errPasswordMin8 => _isTr
+      ? 'Şifre en az 8 karakter olmalı.'
+      : 'Password must be at least 8 characters.';
   String get errUsernameEmpty =>
       _isTr ? 'Kullanıcı adı boş bırakılamaz.' : 'Username cannot be empty.';
-  String get errUsernameMin3 =>
-      _isTr ? 'Kullanıcı adı en az 3 karakter olmalı.'
+  String get errUsernameMin3 => _isTr
+      ? 'Kullanıcı adı en az 3 karakter olmalı.'
       : 'Username must be at least 3 characters.';
   String get errUsernameChars => _isTr
       ? 'Sadece harf, rakam, nokta ve alt çizgi kullanılabilir.'
       : 'Only letters, numbers, dots and underscores allowed.';
+
+  /// Localized message for a semantic auth error code (used in toasts).
+  String authErrorMessage(AuthErrorCode code) => switch (code) {
+    AuthErrorCode.invalidCredentials =>
+      _isTr ? 'E-posta veya şifre hatalı.' : 'Invalid email or password.',
+    AuthErrorCode.emailNotConfirmed =>
+      _isTr
+          ? 'Devam etmeden önce e-postanı doğrulaman gerekiyor.'
+          : 'Please confirm your email before continuing.',
+    AuthErrorCode.emailAlreadyInUse =>
+      _isTr
+          ? 'Bu e-posta adresi zaten kayıtlı.'
+          : 'This email is already registered.',
+    AuthErrorCode.weakPassword =>
+      _isTr ? 'Şifre çok zayıf.' : 'Password is too weak.',
+    AuthErrorCode.emailConfirmationRequired =>
+      _isTr
+          ? 'Kayıt başarılı. Lütfen e-postanı doğrula.'
+          : 'Sign-up successful. Please confirm your email.',
+    AuthErrorCode.network =>
+      _isTr
+          ? 'İnternet bağlantını kontrol et.'
+          : 'Check your internet connection.',
+    AuthErrorCode.unknown =>
+      _isTr
+          ? 'Bir hata oluştu. Lütfen tekrar dene.'
+          : 'Something went wrong. Please try again.',
+  };
 
   // ── File Upload ───────────────────────────────────────────────────────────
   String get urlPaste => _isTr ? 'URL Yapıştır' : 'Paste URL';
@@ -218,6 +261,9 @@ class AppStrings {
   String get supportedFormats => _isTr
       ? 'Desteklenen formatlar: EPUB, PDF, DOCX, TXT'
       : 'Supported formats: EPUB, PDF, DOCX, TXT';
+  String get unsupportedFormat => _isTr
+      ? 'Desteklenmeyen dosya formatı. Lütfen şunlardan birini seç: EPUB, PDF, DOCX, TXT'
+      : 'Unsupported file format. Please choose one of: EPUB, PDF, DOCX, TXT';
   String get uploadTitle => _isTr ? 'Dosya Yükle' : 'Upload File';
   String get uploadPreparing => _isTr ? 'Hazırlanıyor...' : 'Preparing...';
   String get uploadUploading => _isTr ? 'Yükleniyor' : 'Uploading';
@@ -231,19 +277,23 @@ class AppStrings {
   String uploadDoneSubtitle(String name) => _isTr
       ? '$name\nKütüphanene başarıyla eklendi.'
       : '$name\nSuccessfully added to your library.';
-  String get uploadErrorSubtitle =>
-      _isTr ? 'Dosya yüklenemedi. Tekrar dene.' : 'File could not be uploaded. Try again.';
+  String get uploadErrorSubtitle => _isTr
+      ? 'Dosya yüklenemedi. Tekrar dene.'
+      : 'File could not be uploaded. Try again.';
   String get browseFiles => _isTr ? 'Dosyalara Göz At' : 'Browse Files';
   String get goToLibrary => _isTr ? 'Kütüphaneye Git' : 'Go to Library';
   String get addAnotherFile => _isTr ? 'Başka Dosya Ekle' : 'Add Another File';
   String get vibeEngineReady => _isTr ? 'VIBEENGINE HAZIR' : 'VIBEENGINE READY';
-  String get vibeEngineAnalyzed => _isTr ? 'Analiz Tamamlandı' : 'Analysis Complete';
+  String get vibeEngineAnalyzed =>
+      _isTr ? 'Analiz Tamamlandı' : 'Analysis Complete';
   String get importButton => _isTr ? 'İçe Aktar' : 'Import';
-  String get driveSub =>
-      _isTr ? 'Drive hesabınızdan içe aktarın' : 'Import from your Drive account';
+  String get driveSub => _isTr
+      ? 'Drive hesabınızdan içe aktarın'
+      : 'Import from your Drive account';
   String get dropboxSub =>
       _isTr ? 'Dropbox klasörünüzden seçin' : 'Select from your Dropbox folder';
-  String get icloudSub => _isTr ? 'Apple iCloud dosyalarınız' : 'Your Apple iCloud files';
+  String get icloudSub =>
+      _isTr ? 'Apple iCloud dosyalarınız' : 'Your Apple iCloud files';
 
   // ── Stats / Leaderboard ───────────────────────────────────────────────────
   String get leaderboard => _isTr ? 'Liderler' : 'Leaderboard';

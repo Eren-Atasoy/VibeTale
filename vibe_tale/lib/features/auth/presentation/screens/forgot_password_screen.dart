@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:vibe_tale/core/constants/app_colors.dart';
 import 'package:vibe_tale/core/constants/app_dimensions.dart';
 import 'package:vibe_tale/core/constants/app_typography.dart';
+import 'package:vibe_tale/core/error/auth_error.dart';
 import 'package:vibe_tale/core/providers/app_settings_provider.dart';
 import 'package:vibe_tale/core/theme/app_theme_colors.dart';
 import 'package:vibe_tale/core/widgets/neon_button.dart';
@@ -44,9 +45,10 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   }
 
   Future<void> _handleSend() async {
+    final s = ref.read(appStringsProvider);
     final email = _emailController.text.trim();
     if (email.isEmpty) {
-      setState(() => _emailError = 'E-posta adresi boş bırakılamaz.');
+      setState(() => _emailError = s.errEmailEmpty);
       return;
     }
     final emailErr = _validateEmail(email);
@@ -63,10 +65,17 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       setState(() => _emailSent = true);
     } else {
       final state = ref.read(authNotifierProvider);
-      final msg = state is AuthError ? state.message : 'Bir hata oluştu.';
+      final msg = s.authErrorMessage(
+        state is AuthError ? state.code : AuthErrorCode.unknown,
+      );
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(msg, style: AppTypography.bodyMedium.copyWith(color: AppColors.backgroundDeep)),
+          content: Text(
+            msg,
+            style: AppTypography.bodyMedium.copyWith(
+              color: AppColors.backgroundDeep,
+            ),
+          ),
           backgroundColor: Colors.redAccent,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
@@ -232,7 +241,10 @@ class _SuccessView extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.primary.withValues(alpha: 0.12),
             shape: BoxShape.circle,
-            border: Border.all(color: AppColors.primary.withValues(alpha: 0.3), width: 1.5),
+            border: Border.all(
+              color: AppColors.primary.withValues(alpha: 0.3),
+              width: 1.5,
+            ),
           ),
           child: const Icon(
             Icons.mark_email_read_outlined,

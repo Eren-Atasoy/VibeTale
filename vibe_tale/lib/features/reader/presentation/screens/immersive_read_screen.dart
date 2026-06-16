@@ -38,6 +38,10 @@ class _ImmersiveReadScreenState extends ConsumerState<ImmersiveReadScreen> {
   String _bookTitle = '';
   Timer? _progressSaveTimer;
 
+  // Reading session tracking
+  String? _sessionId;
+  DateTime? _sessionStart;
+
   // Derived reading stats
   static const int _wordsPerMinute = 200;
 
@@ -112,6 +116,7 @@ Dev gülümsedi. Ve anlatmaya başladı.
 
   @override
   void dispose() {
+    _endSession();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     _progressSaveTimer?.cancel();
@@ -133,6 +138,7 @@ Dev gülümsedi. Ve anlatmaya başladı.
         _chunksLoading = false;
       });
       _restoreProgress();
+      _startSession();
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -181,6 +187,33 @@ Dev gülümsedi. Ve anlatmaya başladı.
     } catch (_) {}
   }
 
+  Future<void> _startSession() async {
+    try {
+      final id =
+          await ref.read(readingRepositoryProvider).createSession(widget.bookId);
+      _sessionId = id;
+      _sessionStart = DateTime.now();
+    } catch (_) {
+      // Session tracking is best-effort; ignore failures.
+    }
+  }
+
+  void _endSession() {
+    final id = _sessionId;
+    final start = _sessionStart;
+    if (id == null || start == null) return;
+    final elapsed = DateTime.now().difference(start).inSeconds;
+    // Fire-and-forget: dispose cannot await.
+    unawaited(
+      ref.read(readingRepositoryProvider).updateSession(
+            sessionId: id,
+            durationSeconds: elapsed,
+          ),
+    );
+    _sessionId = null;
+    _sessionStart = null;
+  }
+
   Future<void> _toggleBookmark() async {
     HapticFeedback.lightImpact();
     final next = !_isBookmarked;
@@ -194,6 +227,8 @@ Dev gülümsedi. Ve anlatmaya başladı.
         await ref.read(readingRepositoryProvider).createBookmark(
               bookId: widget.bookId,
               chunkId: _chunks[idx].chunkId,
+              chapterNumber: _chunks[idx].chapterNumber ?? 1,
+              offset: 0,
             );
       } catch (_) {
         if (mounted) setState(() => _isBookmarked = false);

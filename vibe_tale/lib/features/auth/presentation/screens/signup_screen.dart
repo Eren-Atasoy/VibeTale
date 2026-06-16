@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:vibe_tale/core/constants/app_colors.dart';
 import 'package:vibe_tale/core/constants/app_dimensions.dart';
 import 'package:vibe_tale/core/constants/app_typography.dart';
+import 'package:vibe_tale/core/error/auth_error.dart';
 import 'package:vibe_tale/core/localization/app_strings.dart';
 import 'package:vibe_tale/core/providers/app_settings_provider.dart';
 import 'package:vibe_tale/core/theme/app_theme_colors.dart';
@@ -97,25 +98,28 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     if (!_validateAll()) return;
     setState(() => _isLoading = true);
 
-    final success = await ref.read(authNotifierProvider.notifier).signUp(
-      email: _emailController.text.trim(),
-      password: _passwordController.text,
-      username: _usernameController.text.trim(),
-    );
+    final success = await ref
+        .read(authNotifierProvider.notifier)
+        .signUp(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+          username: _usernameController.text.trim(),
+        );
 
     if (!mounted) return;
     setState(() => _isLoading = false);
 
     if (!success) {
+      final s = ref.read(appStringsProvider);
       final authState = ref.read(authNotifierProvider);
-      final msg = authState is AuthError ? authState.message : 'Kayıt başarısız.';
+      final code = authState is AuthError
+          ? authState.code
+          : AuthErrorCode.unknown;
+      final isPending = code == AuthErrorCode.emailConfirmationRequired;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(msg),
-          backgroundColor: authState is AuthError &&
-                  authState.message.contains('doğrulayın')
-              ? AppColors.primary
-              : Colors.redAccent,
+          content: Text(s.authErrorMessage(code)),
+          backgroundColor: isPending ? AppColors.primary : Colors.redAccent,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppDimensions.radiusSM),
@@ -161,8 +165,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                         onPasswordChanged: _onPasswordChanged,
                         onSignup: _handleSignup,
                       ),
-                      const SizedBox(height: AppDimensions.spaceLG),
-                      _SocialSection(),
                       const SizedBox(height: AppDimensions.spaceXL),
                       _FooterLink(),
                       const SizedBox(height: AppDimensions.spaceLG),
@@ -351,72 +353,6 @@ class _FormSection extends ConsumerWidget {
   }
 }
 
-// ── Social Section ────────────────────────────────────────────────────────────
-
-class _SocialSection extends ConsumerWidget {
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final s = ref.watch(appStringsProvider);
-    return Column(
-      children: [
-        _DividerWithText(label: s.orSpeedUp),
-        const SizedBox(height: AppDimensions.spaceLG),
-        Row(
-          children: [
-            Expanded(
-              child: _SocialOutlineButton(
-                label: 'Google',
-                icon: Icons.g_mobiledata_rounded,
-                onPressed: () {},
-              ),
-            ),
-            const SizedBox(width: AppDimensions.spaceMD),
-            Expanded(
-              child: _SocialOutlineButton(
-                label: 'Apple',
-                icon: Icons.person_outline_rounded,
-                onPressed: () {},
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _SocialOutlineButton extends StatelessWidget {
-  const _SocialOutlineButton({
-    required this.label,
-    required this.icon,
-    required this.onPressed,
-  });
-
-  final String label;
-  final IconData icon;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: AppDimensions.buttonHeight,
-      child: OutlinedButton.icon(
-        onPressed: onPressed,
-        style: OutlinedButton.styleFrom(
-          backgroundColor: context.vColors.inputFill,
-          foregroundColor: context.vColors.textPrimary,
-          side: BorderSide(color: context.vColors.glassBorder, width: 1),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppDimensions.radiusSM),
-          ),
-        ),
-        icon: Icon(icon, size: 20, color: context.vColors.textPrimary),
-        label: Text(label, style: AppTypography.titleMedium),
-      ),
-    );
-  }
-}
-
 // ── Footer Link ───────────────────────────────────────────────────────────────
 
 class _FooterLink extends ConsumerWidget {
@@ -444,35 +380,6 @@ class _FooterLink extends ConsumerWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-// ── Divider with Label ────────────────────────────────────────────────────────
-
-class _DividerWithText extends StatelessWidget {
-  const _DividerWithText({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(child: Container(height: 0.5, color: context.vColors.glassBorder)),
-        Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppDimensions.spaceMD,
-          ),
-          child: Text(
-            label,
-            style: AppTypography.labelSmall.copyWith(
-              color: context.vColors.textSecondary,
-            ),
-          ),
-        ),
-        Expanded(child: Container(height: 0.5, color: context.vColors.glassBorder)),
-      ],
     );
   }
 }

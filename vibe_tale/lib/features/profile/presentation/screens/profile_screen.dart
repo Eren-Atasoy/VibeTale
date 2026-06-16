@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:vibe_tale/core/constants/app_colors.dart';
 import 'package:vibe_tale/core/constants/app_dimensions.dart';
 import 'package:vibe_tale/core/constants/app_typography.dart';
@@ -10,14 +11,46 @@ import 'package:vibe_tale/core/theme/app_theme_colors.dart';
 import 'package:vibe_tale/core/widgets/glass_card.dart';
 import 'package:vibe_tale/core/widgets/themed_background.dart';
 import 'package:vibe_tale/features/home/presentation/screens/home_screen.dart';
+import 'package:vibe_tale/features/library/application/books_provider.dart';
 import 'package:vibe_tale/features/profile/domain/models/user_profile.dart';
+
+const _monthsTr = [
+  'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+  'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık',
+];
+
+/// Builds a [UserProfile] from the signed-in Supabase user. Reading stats that
+/// have no dedicated backend endpoint yet fall back to derived/placeholder values.
+UserProfile _profileFromSession(WidgetRef ref) {
+  final user = Supabase.instance.client.auth.currentUser;
+  final meta = user?.userMetadata;
+  final email = user?.email ?? '';
+  final name = (meta?['username'] ?? meta?['display_name']) as String? ??
+      (email.contains('@') ? email.split('@').first : 'Okuyucu');
+
+  String memberSince = '';
+  final created = user?.createdAt;
+  if (created != null) {
+    final d = DateTime.tryParse(created);
+    if (d != null) memberSince = '${_monthsTr[d.month - 1]} ${d.year}';
+  }
+
+  final booksRead = ref.watch(booksProvider).valueOrNull?.length ?? 0;
+
+  return UserProfile(
+    name: name,
+    email: email,
+    booksRead: booksRead,
+    memberSince: memberSince,
+  );
+}
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final profile = DummyProfile.current;
+    final profile = _profileFromSession(ref);
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return ThemedBackground(
