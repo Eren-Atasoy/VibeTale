@@ -40,7 +40,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
 
   @override
   Widget build(BuildContext context) {
-    final booksAsync = ref.watch(booksProvider);
+    void open(Book b) => context.push('/book/${b.id}');
 
     return ThemedBackground(
       child: Scaffold(
@@ -54,28 +54,13 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
               _LibraryTopBar(),
               _LibraryTabBar(controller: _tabController),
               Expanded(
-                child: booksAsync.when(
-                  loading: () => const Center(
-                    child: CircularProgressIndicator(color: AppColors.primary),
-                  ),
-                  error: (e, _) => _ErrorState(message: e.toString()),
-                  data: (books) => TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _ReadingTab(
-                        books: books,
-                        onBookTap: (b) => context.push('/book/${b.id}'),
-                      ),
-                      _CompletedTab(
-                        books: const [],
-                        onBookTap: (b) => context.push('/book/${b.id}'),
-                      ),
-                      _SavedTab(
-                        books: const [],
-                        onBookTap: (b) => context.push('/book/${b.id}'),
-                      ),
-                    ],
-                  ),
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _ReadingTab(onBookTap: open),
+                    _CompletedTab(onBookTap: open),
+                    _SavedTab(onBookTap: open),
+                  ],
                 ),
               ),
             ],
@@ -187,38 +172,83 @@ class _LibraryTabBar extends ConsumerWidget {
   }
 }
 
+// ── Shared async/empty/refresh wrapper for a library tab ─────────────────────
+
+class _LibraryTabShell extends ConsumerWidget {
+  const _LibraryTabShell({
+    required this.status,
+    required this.emptyIcon,
+    required this.emptyMessage,
+    required this.emptySubtitle,
+    required this.builder,
+  });
+
+  final String status;
+  final IconData emptyIcon;
+  final String emptyMessage;
+  final String emptySubtitle;
+  final Widget Function(List<Book> books) builder;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(libraryProvider(status));
+    return async.when(
+      loading: () => const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      ),
+      error: (e, _) => _ErrorState(message: e.toString()),
+      data: (books) => RefreshIndicator(
+        color: AppColors.primary,
+        onRefresh: () async => ref.invalidate(libraryProvider(status)),
+        child: books.isEmpty
+            ? ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.18),
+                  _EmptyState(
+                    icon: emptyIcon,
+                    message: emptyMessage,
+                    subtitle: emptySubtitle,
+                  ),
+                ],
+              )
+            : builder(books),
+      ),
+    );
+  }
+}
+
+EdgeInsets _tabPadding(BuildContext context) => EdgeInsets.fromLTRB(
+      AppDimensions.screenPaddingH,
+      AppDimensions.spaceMD,
+      AppDimensions.screenPaddingH,
+      AppDimensions.bottomNavHeight + MediaQuery.of(context).padding.bottom + 16,
+    );
+
 // ── Okuyorum Tab ──────────────────────────────────────────────────────────────
 
 class _ReadingTab extends ConsumerWidget {
-  const _ReadingTab({required this.books, required this.onBookTap});
+  const _ReadingTab({required this.onBookTap});
 
-  final List<Book> books;
   final ValueChanged<Book> onBookTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.watch(appStringsProvider);
-    if (books.isEmpty) {
-      return _EmptyState(
-        icon: Icons.import_contacts_rounded,
-        message: s.readingEmpty,
-        subtitle: s.readingEmptySub,
-      );
-    }
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
-    return ListView.separated(
-      padding: EdgeInsets.fromLTRB(
-        AppDimensions.screenPaddingH,
-        AppDimensions.spaceMD,
-        AppDimensions.screenPaddingH,
-        AppDimensions.bottomNavHeight + bottomPadding + 16,
+    return _LibraryTabShell(
+      status: 'reading',
+      emptyIcon: Icons.import_contacts_rounded,
+      emptyMessage: s.readingEmpty,
+      emptySubtitle: s.readingEmptySub,
+      builder: (books) => ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: _tabPadding(context),
+        itemCount: books.length,
+        separatorBuilder: (_, _) =>
+            const SizedBox(height: AppDimensions.spaceMD),
+        itemBuilder: (context, index) =>
+            _ReadingCard(book: books[index], onTap: () => onBookTap(books[index])),
       ),
-      itemCount: books.length,
-      separatorBuilder: (_, _) => const SizedBox(height: AppDimensions.spaceMD),
-      itemBuilder: (context, index) {
-        final book = books[index];
-        return _ReadingCard(book: book, onTap: () => onBookTap(book));
-      },
     );
   }
 }
@@ -355,45 +385,31 @@ class _ReadingCard extends ConsumerWidget {
 // ── Tamamladım Tab ────────────────────────────────────────────────────────────
 
 class _CompletedTab extends ConsumerWidget {
-  const _CompletedTab({required this.books, required this.onBookTap});
+  const _CompletedTab({required this.onBookTap});
 
-  final List<Book> books;
   final ValueChanged<Book> onBookTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.watch(appStringsProvider);
-    if (books.isEmpty) {
-      return _EmptyState(
-        icon: Icons.check_circle_outline_rounded,
-        message: s.completedEmpty,
-        subtitle: s.completedEmptySub,
-      );
-    }
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
-    return GridView.builder(
-      padding: EdgeInsets.fromLTRB(
-        AppDimensions.screenPaddingH,
-        AppDimensions.spaceMD,
-        AppDimensions.screenPaddingH,
-        AppDimensions.bottomNavHeight + bottomPadding + 16,
+    return _LibraryTabShell(
+      status: 'completed',
+      emptyIcon: Icons.check_circle_outline_rounded,
+      emptyMessage: s.completedEmpty,
+      emptySubtitle: s.completedEmptySub,
+      builder: (books) => GridView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: _tabPadding(context),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3,
+          childAspectRatio: 0.50,
+          crossAxisSpacing: AppDimensions.spaceMD,
+          mainAxisSpacing: AppDimensions.spaceLG,
+        ),
+        itemCount: books.length,
+        itemBuilder: (context, index) =>
+            _GridBookCard(book: books[index], onTap: () => onBookTap(books[index])),
       ),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        // cover(1/0.68 ≈ 1.47) + spacer(8) + title(~28) + gap(2) + genre(~14) ≈ 52px text
-        // childAspectRatio = width / (width/0.68 + 52) — set generous value
-        childAspectRatio: 0.50,
-        crossAxisSpacing: AppDimensions.spaceMD,
-        mainAxisSpacing: AppDimensions.spaceLG,
-      ),
-      itemCount: books.length,
-      itemBuilder: (context, index) {
-        final book = books[index];
-        return _GridBookCard(
-          book: book,
-          onTap: () => onBookTap(book),
-        );
-      },
     );
   }
 }
@@ -465,35 +481,27 @@ class _GridBookCard extends StatelessWidget {
 // ── Kaydedilenler Tab ─────────────────────────────────────────────────────────
 
 class _SavedTab extends ConsumerWidget {
-  const _SavedTab({required this.books, required this.onBookTap});
+  const _SavedTab({required this.onBookTap});
 
-  final List<Book> books;
   final ValueChanged<Book> onBookTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.watch(appStringsProvider);
-    if (books.isEmpty) {
-      return _EmptyState(
-        icon: Icons.bookmark_outline_rounded,
-        message: s.savedEmpty,
-        subtitle: s.savedEmptySub,
-      );
-    }
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
-    return ListView.separated(
-      padding: EdgeInsets.fromLTRB(
-        AppDimensions.screenPaddingH,
-        AppDimensions.spaceMD,
-        AppDimensions.screenPaddingH,
-        AppDimensions.bottomNavHeight + bottomPadding + 16,
+    return _LibraryTabShell(
+      status: 'saved',
+      emptyIcon: Icons.bookmark_outline_rounded,
+      emptyMessage: s.savedEmpty,
+      emptySubtitle: s.savedEmptySub,
+      builder: (books) => ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: _tabPadding(context),
+        itemCount: books.length,
+        separatorBuilder: (_, _) =>
+            const SizedBox(height: AppDimensions.spaceMD),
+        itemBuilder: (context, index) =>
+            _SavedCard(book: books[index], onTap: () => onBookTap(books[index])),
       ),
-      itemCount: books.length,
-      separatorBuilder: (_, _) => const SizedBox(height: AppDimensions.spaceMD),
-      itemBuilder: (context, index) {
-        final book = books[index];
-        return _SavedCard(book: book, onTap: () => onBookTap(book));
-      },
     );
   }
 }

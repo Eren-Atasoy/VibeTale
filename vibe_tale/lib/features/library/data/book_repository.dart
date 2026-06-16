@@ -70,4 +70,50 @@ class BookRepository {
       throw mapDioError(e);
     }
   }
+
+  // ── Library (reading status + favorites) ──────────────────────────────────
+
+  /// Books in the user's library, optionally filtered to a tab
+  /// (`reading` | `completed` | `saved`).
+  Future<List<Book>> getLibrary({String? status}) async {
+    try {
+      final response = await _dio.get<List<dynamic>>(
+        ApiConstants.library,
+        queryParameters: status != null ? {'status': status} : null,
+      );
+      return (response.data ?? [])
+          .cast<Map<String, dynamic>>()
+          .map((j) => BookDto.fromJson(j).toDomain())
+          .toList();
+    } on DioException catch (e) {
+      throw mapDioError(e);
+    }
+  }
+
+  /// Add or update a book in the library (reading status and/or favorite).
+  Future<void> setLibraryState(
+    String bookId, {
+    String? readingStatus,
+    bool? isFavorite,
+  }) async {
+    try {
+      await _dio.put<void>(
+        ApiConstants.libraryBook(bookId),
+        data: {
+          if (readingStatus != null) 'reading_status': readingStatus,
+          if (isFavorite != null) 'is_favorite': isFavorite,
+        },
+      );
+    } on DioException catch (e) {
+      throw mapDioError(e);
+    }
+  }
+
+  Future<void> removeFromLibrary(String bookId) async {
+    try {
+      await _dio.delete<void>(ApiConstants.libraryBook(bookId));
+    } on DioException catch (e) {
+      throw mapDioError(e);
+    }
+  }
 }

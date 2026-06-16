@@ -20,3 +20,8 @@ final bookStatusProvider =
     FutureProvider.family<BookStatusDto, String>((ref, bookId) {
   return ref.watch(bookRepositoryProvider).getBookStatus(bookId);
 });
+
+/// Library books for a tab: 'reading' | 'completed' | 'saved'.
+final libraryProvider = FutureProvider.family<List<Book>, String>((ref, status) {
+  return ref.watch(bookRepositoryProvider).getLibrary(status: status);
+});

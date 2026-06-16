@@ -14,6 +14,24 @@ abstract final class ApiConstants {
 
   // Ambiance
   static String ambianceChunk(String chunkId) => '/ambiance/chunk/$chunkId';
+  static String bookAmbiance(String bookId) => '/ambiance/book/$bookId';
+
+  // Library (reading status + favorites)
+  static const String library = '/library';
+  static String libraryBook(String bookId) => '/library/$bookId';
+
+  // Me (stats + achievements)
+  static const String myStats = '/me/stats';
+  static const String myAchievements = '/me/achievements';
+
+  // Leaderboard
+  static const String leaderboard = '/leaderboard';
+
+  // Discovery
+  static const String discoveryCategories = '/discovery/categories';
+  static const String discoveryFeatured = '/discovery/featured';
+  static const String discoverySections = '/discovery/sections';
+  static const String discoveryBooks = '/discovery/books';
 
   // Reading
   static String readingProgress(String bookId) => '/reading/progress/$bookId';

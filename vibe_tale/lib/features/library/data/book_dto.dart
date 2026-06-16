@@ -12,6 +12,9 @@ class BookDto {
     this.format,
     this.uploadDate,
     this.lastReadDate,
+    this.genre,
+    this.description,
+    this.totalPages,
   });
 
   final String id;
@@ -23,6 +26,9 @@ class BookDto {
   final String? format;
   final String? uploadDate;
   final String? lastReadDate;
+  final String? genre;
+  final String? description;
+  final int? totalPages;
 
   factory BookDto.fromJson(Map<String, dynamic> json) => BookDto(
         id: json['id'] as String,
@@ -34,15 +40,19 @@ class BookDto {
         format: json['format'] as String?,
         uploadDate: json['upload_date'] as String?,
         lastReadDate: json['last_read_date'] as String?,
+        genre: json['genre'] as String?,
+        description: json['description'] as String?,
+        totalPages: json['total_pages'] as int?,
       );
 
   Book toDomain() => Book(
         id: id,
         title: title,
         author: author,
-        genre: _deriveGenre(),
+        genre: genre ?? _deriveGenre(),
         coverUrl: coverUrl ?? 'https://picsum.photos/seed/$id/400/600',
-        synopsis: auditResult ?? '',
+        synopsis: description ?? auditResult ?? '',
+        pageCount: totalPages ?? 0,
         isNew: _isRecent(),
       );
 
