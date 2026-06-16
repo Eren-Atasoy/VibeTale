@@ -12,6 +12,7 @@ import 'package:vibe_tale/core/widgets/glass_card.dart';
 import 'package:vibe_tale/core/widgets/themed_background.dart';
 import 'package:vibe_tale/features/home/presentation/screens/home_screen.dart';
 import 'package:vibe_tale/features/library/application/books_provider.dart';
+import 'package:vibe_tale/features/profile/application/me_provider.dart';
 import 'package:vibe_tale/features/profile/domain/models/user_profile.dart';
 
 const _monthsTr = [
@@ -264,6 +265,10 @@ class _ReadingStatsRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.watch(appStringsProvider);
+    final stats = ref.watch(statsProvider).valueOrNull;
+    final booksRead = stats?.booksRead ?? profile.booksRead;
+    final booksCompleted = stats?.booksCompleted ?? 0;
+    final hours = stats?.totalReadingHours ?? 0;
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AppDimensions.screenPaddingH,
@@ -272,7 +277,7 @@ class _ReadingStatsRow extends ConsumerWidget {
         children: [
           Expanded(
             child: _StatCard(
-              value: '${profile.booksRead}',
+              value: '$booksRead',
               label: s.booksRead,
               icon: Icons.book_outlined,
             ),
@@ -280,7 +285,7 @@ class _ReadingStatsRow extends ConsumerWidget {
           const SizedBox(width: AppDimensions.spaceMD),
           Expanded(
             child: _StatCard(
-              value: '${profile.booksCompleted}',
+              value: '$booksCompleted',
               label: s.booksCompleted,
               icon: Icons.check_circle_outline_rounded,
             ),
@@ -288,7 +293,7 @@ class _ReadingStatsRow extends ConsumerWidget {
           const SizedBox(width: AppDimensions.spaceMD),
           Expanded(
             child: _StatCard(
-              value: '${profile.totalReadingHours.toInt()}${s.hoursSuffix}',
+              value: '$hours${s.hoursSuffix}',
               label: s.totalHours,
               icon: Icons.schedule_outlined,
             ),
@@ -352,12 +357,16 @@ class _AchievementSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.watch(appStringsProvider);
+    final achievements =
+        ref.watch(achievementsProvider).valueOrNull ?? const [];
+    bool earned(String key) =>
+        achievements.any((a) => a.key == key && a.earned);
     final badges = [
-      _Badge(icon: Icons.local_fire_department_rounded, label: s.badgeStreak7),
-      _Badge(icon: Icons.speed_rounded, label: s.badgeFastReader),
-      _Badge(icon: Icons.auto_stories_rounded, label: s.badgeFirstBook),
-      _Badge(icon: Icons.star_rounded, label: s.badgeSuperReader),
-      _Badge(icon: Icons.emoji_events_rounded, label: s.badgeMonthRecord),
+      _Badge(icon: Icons.local_fire_department_rounded, label: s.badgeStreak7, earned: earned('streak_7')),
+      _Badge(icon: Icons.speed_rounded, label: s.badgeFastReader, earned: earned('speed_reader')),
+      _Badge(icon: Icons.auto_stories_rounded, label: s.badgeFirstBook, earned: earned('first_book')),
+      _Badge(icon: Icons.star_rounded, label: s.badgeSuperReader, earned: earned('super_reader')),
+      _Badge(icon: Icons.emoji_events_rounded, label: s.badgeMonthRecord, earned: earned('month_record')),
     ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -407,10 +416,11 @@ class _AchievementSection extends ConsumerWidget {
 }
 
 class _Badge {
-  const _Badge({required this.icon, required this.label});
+  const _Badge({required this.icon, required this.label, this.earned = true});
 
   final IconData icon;
   final String label;
+  final bool earned;
 }
 
 class _AchievementBadge extends StatelessWidget {
@@ -427,16 +437,28 @@ class _AchievementBadge extends StatelessWidget {
           height: 60,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            gradient: AppColors.amberGradient,
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primaryGlow,
-                blurRadius: 10,
-                spreadRadius: 1,
-              ),
-            ],
+            gradient: badge.earned ? AppColors.amberGradient : null,
+            color: badge.earned ? null : context.vColors.inputFill,
+            border: badge.earned
+                ? null
+                : Border.all(color: context.vColors.glassBorder),
+            boxShadow: badge.earned
+                ? [
+                    BoxShadow(
+                      color: AppColors.primaryGlow,
+                      blurRadius: 10,
+                      spreadRadius: 1,
+                    ),
+                  ]
+                : null,
           ),
-          child: Icon(badge.icon, color: AppColors.backgroundDeep, size: 28),
+          child: Icon(
+            badge.icon,
+            color: badge.earned
+                ? AppColors.backgroundDeep
+                : context.vColors.textSecondary,
+            size: 28,
+          ),
         ),
         const SizedBox(height: 6),
         SizedBox(
@@ -464,14 +486,17 @@ class _ReadingActivitySection extends ConsumerWidget {
 
   final UserProfile profile;
 
-  static const _weekMinutes = [0, 45, 30, 0, 60, 90, 20];
-  static const _maxMinutes = 90.0;
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.watch(appStringsProvider);
     final weekDays = s.weekDays;
     final c = context.vColors;
+    final activity =
+        ref.watch(statsProvider).valueOrNull?.weeklyActivity ?? const [];
+    final weekMinutes = List<int>.generate(
+        7, (i) => i < activity.length ? activity[i].minutes : 0);
+    final maxMinutes = weekMinutes.fold<int>(1, (m, v) => v > m ? v : m).toDouble();
+    final todayIndex = DateTime.now().weekday - 1;
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AppDimensions.screenPaddingH,
@@ -491,7 +516,7 @@ class _ReadingActivitySection extends ConsumerWidget {
                   ),
                 ),
                 Text(
-                  '${_weekMinutes.fold(0, (a, b) => a + b)} ${s.minutes}',
+                  '${weekMinutes.fold(0, (a, b) => a + b)} ${s.minutes}',
                   style: AppTypography.bodyMedium.copyWith(
                     color: AppColors.primary,
                     fontWeight: FontWeight.w600,
@@ -506,8 +531,8 @@ class _ReadingActivitySection extends ConsumerWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: List.generate(weekDays.length, (i) {
-                  final ratio = _weekMinutes[i] / _maxMinutes;
-                  final isToday = i == 3;
+                  final ratio = weekMinutes[i] / maxMinutes;
+                  final isToday = i == todayIndex;
                   return Expanded(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 3),
