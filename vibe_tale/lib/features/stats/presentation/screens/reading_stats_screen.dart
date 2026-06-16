@@ -7,6 +7,8 @@ import 'package:vibe_tale/core/constants/app_typography.dart';
 import 'package:vibe_tale/core/providers/app_settings_provider.dart';
 import 'package:vibe_tale/core/theme/app_theme_colors.dart';
 import 'package:vibe_tale/features/home/presentation/screens/home_screen.dart';
+import 'package:vibe_tale/features/stats/application/leaderboard_provider.dart';
+import 'package:vibe_tale/features/stats/data/leaderboard_dto.dart';
 import 'package:vibe_tale/core/widgets/themed_background.dart';
 
 // ── Dummy Leaderboard Data ────────────────────────────────────────────────────
@@ -38,110 +40,6 @@ class LeaderboardUser {
       'https://api.dicebear.com/7.x/avataaars/svg?seed=$avatarSeed';
 }
 
-const _leaderboardUsers = [
-  LeaderboardUser(
-    rank: 1,
-    name: 'Zeynep Kara',
-    username: '@zeynepkara',
-    avatarSeed: 'zeynep',
-    booksRead: 47,
-    pagesRead: 14328,
-    readingStreak: 82,
-    badge: '🏆',
-  ),
-  LeaderboardUser(
-    rank: 2,
-    name: 'Mert Yıldız',
-    username: '@mertyildiz',
-    avatarSeed: 'mert',
-    booksRead: 39,
-    pagesRead: 11904,
-    readingStreak: 61,
-    badge: '🥈',
-  ),
-  LeaderboardUser(
-    rank: 3,
-    name: 'Elif Şahin',
-    username: '@elif_s',
-    avatarSeed: 'elif',
-    booksRead: 34,
-    pagesRead: 10220,
-    readingStreak: 45,
-    badge: '🥉',
-  ),
-  LeaderboardUser(
-    rank: 4,
-    name: 'Burak Demir',
-    username: '@burakd',
-    avatarSeed: 'burak',
-    booksRead: 28,
-    pagesRead: 8610,
-    readingStreak: 33,
-    badge: '📚',
-  ),
-  LeaderboardUser(
-    rank: 5,
-    name: 'Selin Arslan',
-    username: '@selin_a',
-    avatarSeed: 'selin',
-    booksRead: 25,
-    pagesRead: 7890,
-    readingStreak: 28,
-    badge: '📖',
-  ),
-  LeaderboardUser(
-    rank: 6,
-    name: 'Can Öztürk',
-    username: '@can_oz',
-    avatarSeed: 'can',
-    booksRead: 21,
-    pagesRead: 6540,
-    readingStreak: 19,
-    badge: '✨',
-  ),
-  LeaderboardUser(
-    rank: 7,
-    name: 'Ayşe Yılmaz',
-    username: '@ayse_y',
-    avatarSeed: 'ayse',
-    booksRead: 18,
-    pagesRead: 5230,
-    readingStreak: 14,
-    badge: '🌟',
-  ),
-  LeaderboardUser(
-    rank: 8,
-    name: 'Sen',
-    username: '@ben',
-    avatarSeed: 'me',
-    booksRead: 6,
-    pagesRead: 1820,
-    readingStreak: 7,
-    badge: '🔥',
-    isCurrentUser: true,
-  ),
-  LeaderboardUser(
-    rank: 9,
-    name: 'Deniz Kurt',
-    username: '@denizkurt',
-    avatarSeed: 'deniz',
-    booksRead: 5,
-    pagesRead: 1540,
-    readingStreak: 3,
-    badge: '📝',
-  ),
-  LeaderboardUser(
-    rank: 10,
-    name: 'Hasan Çelik',
-    username: '@hasanc',
-    avatarSeed: 'hasan',
-    booksRead: 3,
-    pagesRead: 924,
-    readingStreak: 1,
-    badge: '🌱',
-  ),
-];
-
 // ── Screen ────────────────────────────────────────────────────────────────────
 
 class ReadingStatsScreen extends ConsumerStatefulWidget {
@@ -159,31 +57,34 @@ class _ReadingStatsScreenState extends ConsumerState<ReadingStatsScreen>
   late final AnimationController _podiumController;
   late final Animation<double> _podiumAnim;
 
-  // Period-adjusted data — weekly/monthly show proportionally fewer pages
-  List<LeaderboardUser> get _periodUsers {
-    double scale;
-    switch (_period) {
-      case _Period.weekly:
-        scale = 0.06; // ~weekly slice of yearly
-      case _Period.monthly:
-        scale = 0.25; // ~monthly slice
-      case _Period.allTime:
-        scale = 1.0;
-    }
-    return _leaderboardUsers
-        .map((u) => LeaderboardUser(
-              rank: u.rank,
-              name: u.name,
-              username: u.username,
-              avatarSeed: u.avatarSeed,
-              booksRead: (u.booksRead * scale).ceil(),
-              pagesRead: (u.pagesRead * scale).ceil(),
-              readingStreak: u.readingStreak,
-              badge: u.badge,
-              isCurrentUser: u.isCurrentUser,
-            ))
+  String get _periodKey => switch (_period) {
+        _Period.weekly => 'week',
+        _Period.monthly => 'month',
+        _Period.allTime => 'all',
+      };
+
+  List<LeaderboardUser> _mapUsers(LeaderboardData data) {
+    final meId = data.me?.userId;
+    final users = data.ranking
+        .map((e) => _toUser(e, meId != null && e.userId == meId))
         .toList();
+    if (data.me != null && !users.any((u) => u.isCurrentUser)) {
+      users.add(_toUser(data.me!, true));
+    }
+    return users;
   }
+
+  LeaderboardUser _toUser(LeaderboardEntry e, bool isMe) => LeaderboardUser(
+        rank: e.rank,
+        name: e.displayName,
+        username: '@${e.displayName.split(' ').first.toLowerCase()}',
+        avatarSeed: e.displayName.isNotEmpty ? e.displayName : e.userId,
+        booksRead: e.booksRead,
+        pagesRead: e.pagesRead,
+        readingStreak: e.readingStreak,
+        badge: e.badge,
+        isCurrentUser: isMe,
+      );
 
   @override
   void initState() {
@@ -227,10 +128,36 @@ class _ReadingStatsScreenState extends ConsumerState<ReadingStatsScreen>
                 });
               }),
               Expanded(
-                child: _LeaderboardBody(
-                  users: _periodUsers,
-                  podiumAnim: _podiumAnim,
-                ),
+                child: ref.watch(leaderboardProvider(_periodKey)).when(
+                      loading: () => const Center(
+                        child: CircularProgressIndicator(color: AppColors.primary),
+                      ),
+                      error: (e, _) => Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(AppDimensions.spaceXXL),
+                          child: Text(
+                            'Liderlik tablosu yüklenemedi',
+                            style: AppTypography.bodyMedium,
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                      data: (data) {
+                        final users = _mapUsers(data);
+                        if (users.isEmpty) {
+                          return Center(
+                            child: Text(
+                              'Henüz sıralama yok',
+                              style: AppTypography.bodyMedium,
+                            ),
+                          );
+                        }
+                        return _LeaderboardBody(
+                          users: users,
+                          podiumAnim: _podiumAnim,
+                        );
+                      },
+                    ),
               ),
             ],
           ),
@@ -370,9 +297,11 @@ class _LeaderboardBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.watch(appStringsProvider);
     final bottomPadding = MediaQuery.of(context).padding.bottom;
-    final currentUser = users.firstWhere((u) => u.isCurrentUser);
-    final top3 = users.take(3).toList();
-    final rest = users.skip(3).toList();
+    final currentUser =
+        users.firstWhere((u) => u.isCurrentUser, orElse: () => users.first);
+    final hasPodium = users.length >= 3;
+    final top3 = hasPodium ? users.take(3).toList() : const <LeaderboardUser>[];
+    final rest = hasPodium ? users.skip(3).toList() : users;
 
     return ListView(
       padding: EdgeInsets.only(
@@ -384,8 +313,10 @@ class _LeaderboardBody extends ConsumerWidget {
         const SizedBox(height: AppDimensions.spaceLG),
 
         // Podium — top 3
-        _Podium(top3: top3, animation: podiumAnim),
-        const SizedBox(height: AppDimensions.spaceXL),
+        if (hasPodium) ...[
+          _Podium(top3: top3, animation: podiumAnim),
+          const SizedBox(height: AppDimensions.spaceXL),
+        ],
 
         // Section label
         Padding(
