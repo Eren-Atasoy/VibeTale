@@ -1,21 +1,69 @@
 import 'dart:async';
+import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:vibe_tale/core/constants/app_colors.dart';
 import 'package:vibe_tale/core/constants/app_dimensions.dart';
 import 'package:vibe_tale/core/constants/app_typography.dart';
-import 'package:vibe_tale/core/theme/app_theme_colors.dart';
-import 'package:vibe_tale/core/widgets/themed_background.dart';
+import 'package:vibe_tale/core/router/app_router.dart';
 import 'package:vibe_tale/features/library/application/books_provider.dart';
+import 'package:vibe_tale/features/reader/application/ambient_audio_controller.dart';
+import 'package:vibe_tale/features/reader/application/reader_settings.dart';
 import 'package:vibe_tale/features/reader/application/reading_provider.dart';
 import 'package:vibe_tale/features/reader/data/chunk_dto.dart';
+import 'package:vibe_tale/features/reader/data/reader_media.dart';
+import 'package:vibe_tale/features/reader/presentation/widgets/reader_sheets.dart';
+
+/// Fraction of the viewport treated as the "reading focus line": the chunk
+/// crossing this line drives the active scene (audio + image + emotion). Kept
+/// near the top so the first (short) chunk is the focus at the very start.
+const double _kFocusLine = 0.25;
+
+Color _emotionColor(String? emotion) => switch (emotion) {
+  'wonder' => const Color(0xFF35C2C1),
+  'tense' => const Color(0xFFE5533D),
+  'mysterious' => const Color(0xFF7A5CC0),
+  'melancholic' => const Color(0xFF4A6FA5),
+  'hopeful' => const Color(0xFFE0A92E),
+  'calm' => const Color(0xFF3FA37A),
+  _ => AppColors.primary,
+};
+
+/// Caps fling velocity so a single flick can't shoot to the bottom — the reader
+/// descends gradually. Normal dragging speed is unchanged (drag isn't a fling).
+class _LimitedFlingPhysics extends BouncingScrollPhysics {
+  const _LimitedFlingPhysics({super.parent, this.maxFlingVelocity = 2200});
+
+  final double maxFlingVelocity;
+
+  @override
+  _LimitedFlingPhysics applyTo(ScrollPhysics? ancestor) => _LimitedFlingPhysics(
+    parent: buildParent(ancestor),
+    maxFlingVelocity: maxFlingVelocity,
+  );
+
+  @override
+  Simulation? createBallisticSimulation(
+    ScrollMetrics position,
+    double velocity,
+  ) {
+    final clamped = velocity.clamp(-maxFlingVelocity, maxFlingVelocity);
+    return super.createBallisticSimulation(position, clamped);
+  }
+}
 
 class ImmersiveReadScreen extends ConsumerStatefulWidget {
-  final String bookId;
   const ImmersiveReadScreen({super.key, required this.bookId});
+
+  final String bookId;
 
   @override
   ConsumerState<ImmersiveReadScreen> createState() =>
@@ -23,160 +71,202 @@ class ImmersiveReadScreen extends ConsumerStatefulWidget {
 }
 
 class _ImmersiveReadScreenState extends ConsumerState<ImmersiveReadScreen> {
-  final ScrollController _scrollController = ScrollController();
-  double _progress = 0.0;
-  bool _isBookmarked = false;
+  final ItemScrollController _itemScroll = ItemScrollController();
+  final ItemPositionsListener _positions = ItemPositionsListener.create();
+  final AmbientAudioController _audio = AmbientAudioController();
+  final ValueNotifier<double> _progress = ValueNotifier(0);
 
-  // Ambiance settings (0.0 – 1.0)
+  List<ChunkDto> _chunks = [];
+  bool _loading = true;
+  String? _error;
+  String _bookTitle = '';
+
+  int _activeIndex = -1;
+  final Map<int, AmbianceDto> _ambiance = {};
+  AmbianceDto? _currentAmbiance;
+
   double _audioVolume = 0.65;
   double _visualIntensity = 0.80;
+  bool _isBookmarked = false;
+  bool _chromeVisible = true;
+  bool _completed = false;
 
-  // Content loaded from backend
-  List<ChunkDto> _chunks = [];
-  bool _chunksLoading = true;
-  String? _chunksError;
-  String _bookTitle = '';
-  Timer? _progressSaveTimer;
-
-  // Reading session tracking
+  Timer? _ambianceTimer;
+  Timer? _saveTimer;
   String? _sessionId;
   DateTime? _sessionStart;
 
-  // Derived reading stats
   static const int _wordsPerMinute = 200;
-
-  String get _storyContent =>
-      _chunks.map((c) => c.content).join('\n\n');
-
-  String get _chapterLabel {
-    if (_chunks.isEmpty) return '';
-    final num = _chunks.first.chapterNumber;
-    return num != null ? 'BÖLÜM $num' : 'BÖLÜM';
-  }
-
-  String get _chapterTitle {
-    if (_chunks.isEmpty) return '';
-    final num = _chunks.first.chapterNumber;
-    return num != null ? 'Bölüm $num' : 'Başlangıç';
-  }
-
-  int get _totalPages => (_displayContent.split(' ').length / 250).ceil().clamp(1, 9999);
-  int get _currentPage => (_progress * _totalPages).ceil().clamp(1, _totalPages);
-  int get _wordsLeft =>
-      (_displayContent.split(' ').length * (1 - _progress)).round();
-  int get _minutesLeft => (_wordsLeft / _wordsPerMinute).ceil();
-
-  // Returns real content when loaded, placeholder otherwise
-  String get _displayContent =>
-      _chunks.isNotEmpty ? _storyContent : _placeholderContent;
-
-  // Placeholder shown while chunks are loading
-  static const String _placeholderContent = '''
-Keloğlan, mağaranın derinliklerindeki gizemli parıltıya doğru ilerledi. Elindeki değneğin ışığı, nemli duvarlardaki tuhaf sembolleri aydınlatıyordu. Kalbi heyecanla çarparken, onu bekleyen sırrın büyüklüğünü hissedebiliyordu.
-
-Mağaranın içi, dışarıdan göründüğünden çok daha genişti. Tavanından sarkan dev sarkıtlar, kristal bir orman gibi parıldıyordu. Her adımda ayaklarının altındaki taş, boş ve derin bir sesin yankısını gönderiyordu derinliklere. Keloğlan duraksadı; o sesin ne kadar aşağılara indiğini hesaplamaya çalıştı, ama yankı hiç bitmiyordu sanki.
-
-Köyde büyükler hep demişti: "Mağaraya girme, Keloğlan! Orada uyuyan bir dev var, üç yüz yıldır uykuda. Kim onu uyandırırsa, o kişi ya bir kahraman olur ya da yok olup gider." Keloğlan gülmüştü o zamanlar. Şimdi ise o gülüş, boğazında bir düğüme dönüşmüştü.
-
-Birden, sol taraftan garip bir ses duydu. Bir hışırtı mıydı, yoksa rüzgârın kayalara çarpmasından mı kaynaklanıyordu, anlayamadı. Değneğini o yöne doğrulttu. Karanlık, ışığını yutuyordu adeta. Ardından her şey durdu; ses, hareket, hatta zamanın kendisi bile soluklanmayı bıraktı sanki.
-
-Keloğlan geri adım atmak istedi, ama bacakları taş kesilmişti. O an, mağaranın tabanından tırmanan bir titreşim hissetti. Hafif, ama kararlı. Bir nesnenin uyanışının sesi miydi bu? Yoksa sadece kendi kalbinin deli gibi çarptığı mıydı?
-
-Gözlerini kırpıştırarak önüne odaklandı. Işığın erişebildiği son noktada, kocaman, kıllı bir el duruyordu. Parmakları, bir insanın kolundan kalındı. Ve o el, yavaş yavaş açılıp kapanmaya başlıyordu.
-
-Keloğlan tüm cesaretini toplayıp değneğe doğru uzandı, ancak tam o sırada devin devasa eli omzuna dokundu. Soğuk, ağır ve yorgun bir dokunuştu bu. Sanki o el de uyumaktan bıkmıştı.
-
-"Yine mi geldiniz?" dedi dev, sesi mağaranın duvarlarında yankılanan kısık bir gürültüyle. "Kaç yüzyıldır kimse gelmemişti buraya."
-
-Keloğlan dili tutulmuş gibi baktı. Büyükler, devin kükreyeceğini söylemişti. Oysa bu ses, yorgundu. Neredeyse hüzünlüydü.
-
-"Ben..." dedi Keloğlan, sesi titreyerek. "Ben sizi uyandırmak istemedim, efendim. Sadece yolumu kaybettim."
-
-Dev, gözlerini açtı. Gözleri, iki küçük ay gibiydi; sarı ve sakin. Uzun bir süre Keloğlan'a baktı. Sonra güldü. Güldü ve mağaranın tavanından birkaç sarkıt düşerek paramparça oldu.
-
-"Yolunu kaybeden biri," dedi dev, "benim için en iyi misafirdir. Çünkü yolunu bulmuş olanlar asla gelmez buraya."
-
-Keloğlan, değneğini tutmayı bile unuttu. Dev, yerinden kalkmaya başlamıştı. O kadar büyüktü ki, doğrulurken başı tavana değdi ve bir sarkıtı daha kırdı. Tozu, Keloğlan'ın gözlerine doldu.
-
-"Otur," dedi dev, taş bir blok göstererek. "Sana bir hikâye anlatacağım. Ama dikkat et; bu hikâyeyi duymak isteyip istemediğinden emin ol önce. Çünkü bir kez duyduktan sonra, onu unutamazsın."
-
-Keloğlan yutkundu. Köye dönmek, annesinin sıcak çorbasını içmek istedi bir an için. Ama sonra, hayatında ilk kez, bir şeyin peşinden gitmenin korkusunun ta kendisi olduğunu anladı.
-
-Oturdu.
-
-Dev gülümsedi. Ve anlatmaya başladı.
-''';
 
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
+    _positions.itemPositions.addListener(_onPositions);
     _loadContent();
   }
 
   @override
   void dispose() {
     _endSession();
-    _scrollController.removeListener(_onScroll);
-    _scrollController.dispose();
-    _progressSaveTimer?.cancel();
+    _positions.itemPositions.removeListener(_onPositions);
+    _ambianceTimer?.cancel();
+    _saveTimer?.cancel();
+    _audio.dispose();
+    _progress.dispose();
     super.dispose();
   }
 
+  // ── Loading ──────────────────────────────────────────────────────────────
+
   Future<void> _loadContent() async {
     try {
-      final book = await ref
-          .read(bookRepositoryProvider)
-          .getBook(widget.bookId);
-      final chunks = await ref
-          .read(readingRepositoryProvider)
-          .getChunks(widget.bookId);
+      final source = ref.read(readerContentSourceProvider);
+      final chunks = await source.getChunks(widget.bookId);
+      final title = await _resolveTitle();
       if (!mounted) return;
       setState(() {
-        _bookTitle = book.title;
         _chunks = chunks;
-        _chunksLoading = false;
+        _bookTitle = title;
+        _loading = false;
       });
-      _restoreProgress();
+      // The first ItemPositions notification (after layout) commits the scene
+      // at the focus line — single source of truth, so there's no glitchy
+      // double-switch at the start.
+      await _restoreProgress();
       _startSession();
+      // Safety net: ensure the opening scene commits even if no scroll happens.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _activeIndex < 0) _onPositions();
+      });
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _chunksError = e.toString();
-        _chunksLoading = false;
+        _error = e.toString();
+        _loading = false;
       });
+    }
+  }
+
+  Future<String> _resolveTitle() async {
+    if (kUseDummyReaderData) return 'Keloğlan ve Dev';
+    try {
+      final book = await ref.read(bookRepositoryProvider).getBook(widget.bookId);
+      return book.title;
+    } catch (_) {
+      return 'VibeTale';
     }
   }
 
   Future<void> _restoreProgress() async {
+    if (kUseDummyReaderData) return;
     try {
-      // Progress restore via scroll position deferred to future UX improvement
-      await ref.read(readingRepositoryProvider).getProgress(widget.bookId);
+      final progress =
+          await ref.read(readingRepositoryProvider).getProgress(widget.bookId);
+      final chunkId = progress?['current_chunk_id'] as String?;
+      if (chunkId == null) return;
+      final index = _chunks.indexWhere((c) => c.chunkId == chunkId);
+      if (index <= 0) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_itemScroll.isAttached) {
+          _itemScroll.jumpTo(index: index, alignment: 0.15);
+        }
+      });
     } catch (_) {}
   }
 
-  void _onScroll() {
-    if (!_scrollController.hasClients) return;
-    final max = _scrollController.position.maxScrollExtent;
-    final cur = _scrollController.position.pixels;
-    if (max > 0) {
-      setState(() => _progress = (cur / max).clamp(0.0, 1.0));
-      _debounceProgressSave();
+  // ── Reading-position sync ──────────────────────────────────────────────────
+
+  void _onPositions() {
+    if (_chunks.isEmpty) return;
+    final positions = _positions.itemPositions.value
+        .where((p) => p.itemTrailingEdge > 0 && p.itemLeadingEdge < 1)
+        .toList()
+      ..sort((a, b) => a.index.compareTo(b.index));
+    if (positions.isEmpty) return;
+
+    // The chunk whose body crosses the focus line is the one being read.
+    var focus = positions.first;
+    for (final p in positions) {
+      if (p.itemLeadingEdge <= _kFocusLine) focus = p;
+      if (p.itemLeadingEdge > _kFocusLine) break;
+    }
+
+    final span = focus.itemTrailingEdge - focus.itemLeadingEdge;
+    final within = span > 0
+        ? ((_kFocusLine - focus.itemLeadingEdge) / span).clamp(0.0, 1.0)
+        : 0.0;
+    _progress.value = ((focus.index + within) / _chunks.length).clamp(0.0, 1.0);
+
+    final chunkIndex = focus.index.clamp(0, _chunks.length - 1);
+    if (chunkIndex != _activeIndex) _scheduleAmbiance(chunkIndex);
+    _debounceSave();
+  }
+
+  /// Debounce scene commits so fast scrolling doesn't thrash audio/visuals.
+  void _scheduleAmbiance(int index) {
+    _ambianceTimer?.cancel();
+    _ambianceTimer =
+        Timer(const Duration(milliseconds: 150), () => _commitAmbiance(index));
+  }
+
+  Future<void> _commitAmbiance(int index) async {
+    _activeIndex = index;
+    final amb = await _fetchAmbiance(index);
+    if (amb == null || !mounted) return;
+    setState(() => _currentAmbiance = amb);
+    final url = amb.audioUrl;
+    if (url != null) _audio.setScene(url);
+    _prefetch(index);
+  }
+
+  Future<AmbianceDto?> _fetchAmbiance(int index) async {
+    if (index < 0 || index >= _chunks.length) return null;
+    final cached = _ambiance[index];
+    if (cached != null) return cached;
+    try {
+      final amb = await ref
+          .read(readerContentSourceProvider)
+          .getAmbiance(_chunks[index].chunkId);
+      _ambiance[index] = amb;
+      return amb;
+    } catch (_) {
+      return null;
     }
   }
 
-  void _debounceProgressSave() {
-    _progressSaveTimer?.cancel();
-    _progressSaveTimer =
-        Timer(const Duration(seconds: 2), _saveProgress);
+  /// Warm the cache for upcoming scenes so transitions are instant: preload the
+  /// next scene's audio into the idle player and precache the next images.
+  Future<void> _prefetch(int index) async {
+    final next = index + 1;
+    if (next < _chunks.length) {
+      final amb = await _fetchAmbiance(next);
+      final audio = amb?.audioUrl;
+      if (audio != null) unawaited(_audio.preload(audio));
+      final img = amb?.imageUrl;
+      if (img != null && mounted) {
+        unawaited(precacheImage(ReaderMedia.imageProvider(img), context));
+      }
+    }
+    final next2 = index + 2;
+    if (next2 < _chunks.length) {
+      final amb = await _fetchAmbiance(next2);
+      final img = amb?.imageUrl;
+      if (img != null && mounted) {
+        unawaited(precacheImage(ReaderMedia.imageProvider(img), context));
+      }
+    }
+  }
+
+  // ── Persistence (backend only) ─────────────────────────────────────────────
+
+  void _debounceSave() {
+    _saveTimer?.cancel();
+    _saveTimer = Timer(const Duration(seconds: 2), _saveProgress);
   }
 
   Future<void> _saveProgress() async {
-    if (_chunks.isEmpty) return;
-    final idx = (_progress * _chunks.length)
-        .floor()
-        .clamp(0, _chunks.length - 1);
-    final chunk = _chunks[idx];
+    if (kUseDummyReaderData || _chunks.isEmpty) return;
+    final chunk = _chunks[_activeIndex.clamp(0, _chunks.length - 1)];
     try {
       await ref.read(readingRepositoryProvider).saveProgress(
             bookId: widget.bookId,
@@ -188,14 +278,12 @@ Dev gülümsedi. Ve anlatmaya başladı.
   }
 
   Future<void> _startSession() async {
+    if (kUseDummyReaderData) return;
     try {
-      final id =
+      _sessionId =
           await ref.read(readingRepositoryProvider).createSession(widget.bookId);
-      _sessionId = id;
       _sessionStart = DateTime.now();
-    } catch (_) {
-      // Session tracking is best-effort; ignore failures.
-    }
+    } catch (_) {}
   }
 
   void _endSession() {
@@ -203,7 +291,6 @@ Dev gülümsedi. Ve anlatmaya başladı.
     final start = _sessionStart;
     if (id == null || start == null) return;
     final elapsed = DateTime.now().difference(start).inSeconds;
-    // Fire-and-forget: dispose cannot await.
     unawaited(
       ref.read(readingRepositoryProvider).updateSession(
             sessionId: id,
@@ -214,20 +301,29 @@ Dev gülümsedi. Ve anlatmaya başladı.
     _sessionStart = null;
   }
 
+  // ── Actions ────────────────────────────────────────────────────────────────
+
+  void _toggleChrome() {
+    HapticFeedback.selectionClick();
+    setState(() => _chromeVisible = !_chromeVisible);
+  }
+
+  void _setAudioVolume(double v) {
+    setState(() => _audioVolume = v);
+    _audio.setMasterVolume(v);
+  }
+
   Future<void> _toggleBookmark() async {
     HapticFeedback.lightImpact();
     final next = !_isBookmarked;
     setState(() => _isBookmarked = next);
-
-    if (next && _chunks.isNotEmpty) {
-      final idx = (_progress * _chunks.length)
-          .floor()
-          .clamp(0, _chunks.length - 1);
+    if (next && !kUseDummyReaderData && _chunks.isNotEmpty) {
+      final chunk = _chunks[_activeIndex.clamp(0, _chunks.length - 1)];
       try {
         await ref.read(readingRepositoryProvider).createBookmark(
               bookId: widget.bookId,
-              chunkId: _chunks[idx].chunkId,
-              chapterNumber: _chunks[idx].chapterNumber ?? 1,
+              chunkId: chunk.chunkId,
+              chapterNumber: chunk.chapterNumber ?? 1,
               offset: 0,
             );
       } catch (_) {
@@ -235,14 +331,25 @@ Dev gülümsedi. Ve anlatmaya başladı.
         return;
       }
     }
+    if (mounted) _snack(next ? 'Yer imi eklendi' : 'Yer imi kaldırıldı');
+  }
 
-    if (!mounted) return;
+  void _markCompleted() {
+    if (_completed) return;
+    setState(() => _completed = true);
+    HapticFeedback.mediumImpact();
+    _endSession();
+    // NOTE: persistent "completed" needs the backend `reading_status` field
+    // (currently missing). Until then this is a local/session-level mark.
+    _snack('Kitabı tamamladın 🎉');
+  }
+
+  void _snack(String text) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          next ? 'Yer imi eklendi' : 'Yer imi kaldırıldı',
-          style: AppTypography.bodyMedium
-              .copyWith(color: AppColors.backgroundDeep),
+          text,
+          style: AppTypography.bodyMedium.copyWith(color: AppColors.backgroundDeep),
         ),
         backgroundColor: AppColors.primary,
         duration: const Duration(seconds: 1),
@@ -254,506 +361,541 @@ Dev gülümsedi. Ve anlatmaya başladı.
     );
   }
 
-  void _showAmbianceSheet() {
+  void _openAmbiance() {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _AmbianceSheet(
+      builder: (_) => AmbianceSheet(
         audioVolume: _audioVolume,
         visualIntensity: _visualIntensity,
-        onAudioChanged: (v) => setState(() => _audioVolume = v),
+        onAudioChanged: _setAudioVolume,
         onVisualChanged: (v) => setState(() => _visualIntensity = v),
-        onReset: () => setState(() {
-          _audioVolume = 0.65;
-          _visualIntensity = 0.80;
-        }),
+        onReset: () {
+          _setAudioVolume(0.65);
+          setState(() => _visualIntensity = 0.80);
+        },
       ),
     );
   }
 
+  void _openSettings() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const ReaderSettingsSheet(),
+    );
+  }
+
+  int get _totalWords =>
+      _chunks.fold(0, (sum, c) => sum + c.content.split(' ').length);
+  int get _chapterNumber =>
+      _chunks.isEmpty ? 1 : (_chunks[_activeIndex.clamp(0, _chunks.length - 1)].chapterNumber ?? 1);
+
+  // ── Build ────────────────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
-    final c = context.vColors;
+    final settings = ref.watch(readerSettingsProvider);
+    final palette = ReaderPalette.of(settings.theme);
+    final isLight = settings.theme == ReaderTheme.light;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness:
-            context.isDark ? Brightness.light : Brightness.dark,
+        statusBarIconBrightness: isLight ? Brightness.dark : Brightness.light,
         systemNavigationBarColor: Colors.transparent,
       ),
-      child: ThemedBackground(
-        child: Scaffold(
-          backgroundColor: Colors.transparent,
-          extendBodyBehindAppBar: true,
-          body: SafeArea(
-            bottom: false,
-            child: Stack(
-              children: [
-                // ── Reading area ─────────────────────────────────────────────
-                CustomScrollView(
-                  controller: _scrollController,
-                  physics: const BouncingScrollPhysics(),
-                  slivers: [
-                    SliverAppBar(
-                      floating: true,
-                      backgroundColor: context.isDark
-                          ? AppColors.backgroundDeep.withValues(alpha: 0.95)
-                          : const Color(0xFFF4F6F5).withValues(alpha: 0.95),
-                      elevation: 0,
-                      leading: IconButton(
-                        icon: Icon(Icons.arrow_back_rounded,
-                            color: c.textPrimary),
-                        onPressed: () => context.pop(),
-                      ),
-                      title: Text(
-                        _bookTitle.toUpperCase(),
-                        style: AppTypography.labelSmall.copyWith(
-                          color: c.textSecondary,
-                          letterSpacing: 1.5,
-                          fontSize: 11,
-                        ),
-                      ),
-                      centerTitle: true,
-                      actions: [
-                        // Ambiance button
-                        IconButton(
-                          icon: Icon(
-                            Icons.tune_rounded,
-                            color: c.textSecondary,
-                            size: 20,
-                          ),
-                          tooltip: 'Ortam Ayarları',
-                          onPressed: _showAmbianceSheet,
-                        ),
-                        // Bookmark
-                        IconButton(
-                          icon: Icon(
-                            _isBookmarked
-                                ? Icons.bookmark_rounded
-                                : Icons.bookmark_border_rounded,
-                            color: _isBookmarked
-                                ? AppColors.primary
-                                : c.textSecondary,
-                            size: 20,
-                          ),
-                          onPressed: _toggleBookmark,
-                        ),
-                      ],
-                    ),
-
-                    // Chapter header + text content
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppDimensions.screenPaddingH * 1.4,
-                          vertical: AppDimensions.spaceLG,
-                        ),
-                        child: Column(
-                          children: [
-                            // Chapter label
-                            if (_chapterLabel.isNotEmpty)
-                            Text(
-                              _chapterLabel,
-                              style: AppTypography.labelSmall.copyWith(
-                                color: AppColors.primary,
-                                letterSpacing: 2.0,
-                                fontSize: 11,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: AppDimensions.spaceSM),
-
-                            // Chapter title
-                            Text(
-                              _chapterTitle,
-                              style: AppTypography.displayMedium.copyWith(
-                                color: c.textPrimary,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: AppDimensions.spaceLG),
-
-                            // Decorative divider
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Container(
-                                    height: 1,
-                                    color: c.glassBorder,
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: AppDimensions.spaceMD),
-                                  child: Icon(
-                                    Icons.auto_awesome_rounded,
-                                    size: 14,
-                                    color: AppColors.primary.withValues(alpha: 0.6),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Container(
-                                    height: 1,
-                                    color: c.glassBorder,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: AppDimensions.spaceLG),
-
-                            // Story text
-                            if (_chunksLoading)
-                              const Center(
-                                child: Padding(
-                                  padding: EdgeInsets.all(32),
-                                  child: CircularProgressIndicator(
-                                    color: AppColors.primary,
-                                  ),
-                                ),
-                              )
-                            else if (_chunksError != null)
-                              Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Text(
-                                  'İçerik yüklenemedi: $_chunksError',
-                                  style: AppTypography.bodyMedium,
-                                  textAlign: TextAlign.center,
-                                ),
-                              )
-                            else
-                            Text(
-                              _displayContent,
-                              style: AppTypography.readingBody.copyWith(
-                                color: c.textPrimary,
-                                height: 1.9,
-                                fontSize: 17,
-                              ),
-                              textAlign: TextAlign.justify,
-                            ),
-
-                            // Bottom spacing for progress bar
-                            const SizedBox(height: 100),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                // ── Footer progress bar ───────────────────────────────────────
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  child: Container(
-                    padding: EdgeInsets.fromLTRB(
-                      AppDimensions.screenPaddingH,
-                      AppDimensions.spaceLG,
-                      AppDimensions.screenPaddingH,
-                      MediaQuery.of(context).padding.bottom + AppDimensions.spaceSM,
-                    ),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.bottomCenter,
-                        end: Alignment.topCenter,
-                        colors: [
-                          (context.isDark
-                                  ? AppColors.backgroundDeep
-                                  : const Color(0xFFF4F6F5))
-                              .withValues(alpha: 0.98),
-                          (context.isDark
-                                  ? AppColors.backgroundDeep
-                                  : const Color(0xFFF4F6F5))
-                              .withValues(alpha: 0.0),
-                        ],
-                      ),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Page + time info
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'SAYFA $_currentPage',
-                              style: AppTypography.labelSmall.copyWith(
-                                color: context.vColors.textHint,
-                                fontSize: 10,
-                              ),
-                            ),
-                            Text(
-                              '$_minutesLeft DK KALDI',
-                              style: AppTypography.labelSmall.copyWith(
-                                color: context.vColors.textHint,
-                                fontSize: 10,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-
-                        // Progress track
-                        Row(
-                          children: [
-                            Text(
-                              '${(_progress * 100).toInt()}%',
-                              style: AppTypography.labelSmall.copyWith(
-                                color: context.vColors.textSecondary,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 11,
-                              ),
-                            ),
-                            const SizedBox(width: AppDimensions.spaceMD),
-                            Expanded(
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(
-                                    AppDimensions.radiusPill),
-                                child: LinearProgressIndicator(
-                                  value: _progress,
-                                  backgroundColor:
-                                      context.vColors.glassBorder,
-                                  valueColor:
-                                      const AlwaysStoppedAnimation<Color>(
-                                          AppColors.primary),
-                                  minHeight: 4,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+      child: Scaffold(
+        backgroundColor: palette.base,
+        body: Stack(
+          children: [
+            _SceneBackground(
+              ambiance: _currentAmbiance,
+              palette: palette,
+              intensity: _visualIntensity,
             ),
-          ),
+            // Non-positioned so it sizes the Stack to fullscreen.
+            GestureDetector(
+              onTap: _toggleChrome,
+              child: _buildContent(settings, palette),
+            ),
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: _TopBar(
+                visible: _chromeVisible,
+                title: _bookTitle,
+                scene: _currentAmbiance?.scene,
+                isBookmarked: _isBookmarked,
+                palette: palette,
+                onBack: () => context.canPop()
+                    ? context.pop()
+                    : context.go(AppRoutes.home),
+                onAmbiance: _openAmbiance,
+                onSettings: _openSettings,
+                onBookmark: _toggleBookmark,
+              ),
+            ),
+            _BottomBar(
+              visible: _chromeVisible,
+              progress: _progress,
+              chapter: _chapterNumber,
+              totalWords: _totalWords,
+              wpm: _wordsPerMinute,
+              palette: palette,
+            ),
+          ],
         ),
       ),
     );
   }
+
+  Widget _buildContent(ReaderSettings settings, ReaderPalette palette) {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+    }
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Text(
+            'İçerik yüklenemedi:\n$_error',
+            textAlign: TextAlign.center,
+            style: AppTypography.bodyMedium.copyWith(color: palette.text),
+          ),
+        ),
+      );
+    }
+
+    final topPad = MediaQuery.of(context).padding.top + 96;
+    final bottomPad = MediaQuery.of(context).padding.bottom + 96;
+    final style = _readingStyle(settings, palette);
+
+    return ScrollablePositionedList.builder(
+      itemScrollController: _itemScroll,
+      itemPositionsListener: _positions,
+      physics: const _LimitedFlingPhysics(),
+      padding: EdgeInsets.fromLTRB(
+        AppDimensions.screenPaddingH * 1.4,
+        topPad,
+        AppDimensions.screenPaddingH * 1.4,
+        bottomPad,
+      ),
+      itemCount: _chunks.length + 1,
+      itemBuilder: (context, i) {
+        if (i == _chunks.length) {
+          return _EndCard(
+            completed: _completed,
+            palette: palette,
+            onComplete: _markCompleted,
+          );
+        }
+        final chunk = _chunks[i];
+        final showHeader =
+            i == 0 || chunk.chapterNumber != _chunks[i - 1].chapterNumber;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (showHeader) _ChapterHeader(number: chunk.chapterNumber, palette: palette),
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppDimensions.spaceLG),
+              child: Text(chunk.content, style: style, textAlign: TextAlign.justify),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  TextStyle _readingStyle(ReaderSettings s, ReaderPalette p) {
+    final size = 17.0 * s.fontScale;
+    final shadows = [
+      Shadow(color: p.textShadow, blurRadius: 6),
+      Shadow(color: p.textShadow, blurRadius: 14),
+    ];
+    return s.serif
+        ? GoogleFonts.lora(fontSize: size, height: 1.9, color: p.text, shadows: shadows)
+        : GoogleFonts.inter(fontSize: size, height: 1.9, color: p.text, shadows: shadows);
+  }
 }
 
-// ── Ambiance bottom sheet ─────────────────────────────────────────────────────
+// ── Scene background (readability decoupled from atmosphere) ───────────────────
 
-class _AmbianceSheet extends StatefulWidget {
-  const _AmbianceSheet({
-    required this.audioVolume,
-    required this.visualIntensity,
-    required this.onAudioChanged,
-    required this.onVisualChanged,
-    required this.onReset,
+class _SceneBackground extends StatelessWidget {
+  const _SceneBackground({
+    required this.ambiance,
+    required this.palette,
+    required this.intensity,
   });
 
-  final double audioVolume;
-  final double visualIntensity;
-  final ValueChanged<double> onAudioChanged;
-  final ValueChanged<double> onVisualChanged;
-  final VoidCallback onReset;
-
-  @override
-  State<_AmbianceSheet> createState() => _AmbianceSheetState();
-}
-
-class _AmbianceSheetState extends State<_AmbianceSheet> {
-  late double _audio;
-  late double _visual;
-
-  @override
-  void initState() {
-    super.initState();
-    _audio = widget.audioVolume;
-    _visual = widget.visualIntensity;
-  }
+  final AmbianceDto? ambiance;
+  final ReaderPalette palette;
+  final double intensity;
 
   @override
   Widget build(BuildContext context) {
-    final c = context.vColors;
+    final imageUrl = ambiance?.imageUrl;
+    final imageOpacity = intensity * palette.imageOpacityCap;
+    // Light readability veil that the visual-intensity slider drives.
+    final veil = 0.16 + intensity * 0.34;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: c.cardSurface,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(AppDimensions.radiusLG),
-        ),
-        border: Border(
-          top: BorderSide(color: c.glassBorder, width: 1),
-        ),
-      ),
-      padding: EdgeInsets.fromLTRB(
-        AppDimensions.screenPaddingH,
-        AppDimensions.spaceMD,
-        AppDimensions.screenPaddingH,
-        MediaQuery.of(context).padding.bottom + AppDimensions.spaceLG,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+    return Positioned.fill(
+      child: Stack(
+        fit: StackFit.expand,
         children: [
-          // Drag handle
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: c.glassBorder,
-                borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
-              ),
-            ),
-          ),
-          const SizedBox(height: AppDimensions.spaceLG),
-
-          // Title
-          Text(
-            'ORTAM',
-            style: AppTypography.labelSmall.copyWith(
-              color: c.textSecondary,
-              letterSpacing: 2.5,
-            ),
-          ),
-          const SizedBox(height: AppDimensions.spaceLG),
-
-          // Audio slider
-          _SliderRow(
-            label: 'Ses Seviyesi',
-            value: _audio,
-            leadingIcon: Icons.volume_mute_rounded,
-            trailingIcon: Icons.volume_up_rounded,
-            percentage: '${(_audio * 100).toInt()}%',
-            onChanged: (v) {
-              setState(() => _audio = v);
-              widget.onAudioChanged(v);
-            },
-          ),
-          const SizedBox(height: AppDimensions.spaceLG),
-
-          // Visual slider
-          _SliderRow(
-            label: 'Görsel Yoğunluk',
-            value: _visual,
-            leadingIcon: Icons.brightness_low_rounded,
-            trailingIcon: Icons.brightness_high_rounded,
-            percentage: '${(_visual * 100).toInt()}%',
-            onChanged: (v) {
-              setState(() => _visual = v);
-              widget.onVisualChanged(v);
-            },
-          ),
-          const SizedBox(height: AppDimensions.spaceXL),
-
-          // Reset button
-          SizedBox(
-            width: double.infinity,
-            height: AppDimensions.buttonHeight,
-            child: OutlinedButton.icon(
-              onPressed: () {
-                setState(() {
-                  _audio = 0.65;
-                  _visual = 0.80;
-                });
-                widget.onReset();
-              },
-              icon: const Icon(Icons.refresh_rounded,
-                  size: 18, color: AppColors.primary),
-              label: Text(
-                'Varsayılana Dön',
-                style: AppTypography.buttonLabel.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: AppColors.primary),
-                shape: RoundedRectangleBorder(
-                  borderRadius:
-                      BorderRadius.circular(AppDimensions.radiusPill),
+          ColoredBox(color: palette.base),
+          if (imageUrl != null && imageOpacity > 0.02)
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 800),
+              child: Opacity(
+                key: ValueKey(imageUrl),
+                opacity: imageOpacity,
+                child: ImageFiltered(
+                  imageFilter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
+                  child: Image(image: ReaderMedia.imageProvider(imageUrl), fit: BoxFit.cover),
                 ),
               ),
             ),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 800),
+            color: _emotionColor(ambiance?.emotion).withValues(alpha: 0.14 * intensity),
           ),
+          ColoredBox(color: palette.scrim.withValues(alpha: veil)),
         ],
       ),
     );
   }
 }
 
-class _SliderRow extends StatelessWidget {
-  const _SliderRow({
-    required this.label,
-    required this.value,
-    required this.leadingIcon,
-    required this.trailingIcon,
-    required this.percentage,
-    required this.onChanged,
-  });
+// ── Chapter header (animated on appearance) ───────────────────────────────────
 
-  final String label;
-  final double value;
-  final IconData leadingIcon;
-  final IconData trailingIcon;
-  final String percentage;
-  final ValueChanged<double> onChanged;
+class _ChapterHeader extends StatelessWidget {
+  const _ChapterHeader({required this.number, required this.palette});
+
+  final int? number;
+  final ReaderPalette palette;
 
   @override
   Widget build(BuildContext context) {
-    final c = context.vColors;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppDimensions.spaceLG),
+      child: Column(
+        children: [
+          Text(
+            number != null ? 'BÖLÜM $number' : 'BÖLÜM',
+            style: AppTypography.labelSmall.copyWith(
+              color: AppColors.primary,
+              letterSpacing: 2.0,
+              fontSize: 11,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppDimensions.spaceMD),
+          Row(
+            children: [
+              Expanded(child: Container(height: 1, color: palette.secondaryText.withValues(alpha: 0.3))),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppDimensions.spaceMD),
+                child: Icon(Icons.auto_awesome_rounded, size: 14, color: AppColors.primary.withValues(alpha: 0.7)),
+              ),
+              Expanded(child: Container(height: 1, color: palette.secondaryText.withValues(alpha: 0.3))),
+            ],
+          ),
+          const SizedBox(height: AppDimensions.spaceLG),
+        ],
+      ),
+    )
+        .animate()
+        .fadeIn(duration: 450.ms, curve: Curves.easeOut)
+        .slideY(begin: 0.12, end: 0, duration: 450.ms, curve: Curves.easeOutCubic);
+  }
+}
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              label,
-              style: AppTypography.titleMedium.copyWith(color: c.textPrimary),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: AppDimensions.spaceSM, vertical: 3),
-              decoration: BoxDecoration(
-                color: AppColors.primaryGlow,
-                borderRadius:
-                    BorderRadius.circular(AppDimensions.radiusSM),
-              ),
-              child: Text(
-                percentage,
-                style: AppTypography.labelSmall.copyWith(
-                  color: AppColors.primary,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
+// ── End-of-book completion card ───────────────────────────────────────────────
+
+class _EndCard extends StatelessWidget {
+  const _EndCard({
+    required this.completed,
+    required this.palette,
+    required this.onComplete,
+  });
+
+  final bool completed;
+  final ReaderPalette palette;
+  final VoidCallback onComplete;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppDimensions.spaceXXL),
+      child: Column(
+        children: [
+          Icon(
+            completed ? Icons.verified_rounded : Icons.auto_stories_rounded,
+            color: AppColors.primary,
+            size: 40,
+          ),
+          const SizedBox(height: AppDimensions.spaceMD),
+          Text(
+            completed ? 'Tamamlandı' : 'Hikâyenin Sonu',
+            style: AppTypography.titleLarge.copyWith(color: palette.text, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: AppDimensions.spaceSM),
+          Text(
+            completed
+                ? 'Bu kitabı bitirdin. Tebrikler!'
+                : 'Bu bölümün sonuna geldin.',
+            style: AppTypography.bodyMedium.copyWith(color: palette.secondaryText),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppDimensions.spaceLG),
+          if (!completed)
+            SizedBox(
+              width: 200,
+              height: AppDimensions.buttonHeight,
+              child: ElevatedButton.icon(
+                onPressed: onComplete,
+                icon: const Icon(Icons.check_rounded, size: 18, color: AppColors.backgroundDeep),
+                label: Text(
+                  'Tamamla',
+                  style: AppTypography.buttonLabel.copyWith(
+                    color: AppColors.backgroundDeep,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
+                  ),
+                  elevation: 0,
                 ),
               ),
             ),
-          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ── Top bar (hide-able chrome) ────────────────────────────────────────────────
+
+class _TopBar extends StatelessWidget {
+  const _TopBar({
+    required this.visible,
+    required this.title,
+    required this.scene,
+    required this.isBookmarked,
+    required this.palette,
+    required this.onBack,
+    required this.onAmbiance,
+    required this.onSettings,
+    required this.onBookmark,
+  });
+
+  final bool visible;
+  final String title;
+  final String? scene;
+  final bool isBookmarked;
+  final ReaderPalette palette;
+  final VoidCallback onBack;
+  final VoidCallback onAmbiance;
+  final VoidCallback onSettings;
+  final VoidCallback onBookmark;
+
+  @override
+  Widget build(BuildContext context) {
+    final topInset = MediaQuery.of(context).padding.top;
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 220),
+      opacity: visible ? 1 : 0,
+      child: IgnorePointer(
+        ignoring: !visible,
+        child: Container(
+          padding: EdgeInsets.only(top: topInset + 4, left: 4, right: 4, bottom: 8),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                palette.base.withValues(alpha: 0.97),
+                palette.base.withValues(alpha: 0.92),
+                palette.base.withValues(alpha: 0.0),
+              ],
+              stops: const [0.0, 0.6, 1.0],
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.arrow_back_rounded, color: palette.text),
+                    onPressed: onBack,
+                  ),
+                  Expanded(
+                    child: Text(
+                      title.toUpperCase(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: AppTypography.labelSmall.copyWith(
+                        color: palette.secondaryText,
+                        letterSpacing: 1.4,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.tune_rounded, color: palette.secondaryText, size: 20),
+                    tooltip: 'Ortam',
+                    onPressed: onAmbiance,
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.text_fields_rounded, color: palette.secondaryText, size: 20),
+                    tooltip: 'Okuma Ayarları',
+                    onPressed: onSettings,
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                      color: isBookmarked ? AppColors.primary : palette.secondaryText,
+                      size: 20,
+                    ),
+                    onPressed: onBookmark,
+                  ),
+                ],
+              ),
+              if (scene != null && scene!.isNotEmpty)
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 400),
+                  child: Padding(
+                    key: ValueKey(scene),
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: palette.scrim.withValues(alpha: 0.4),
+                        borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
+                      ),
+                      child: Text(
+                        scene!,
+                        style: AppTypography.labelSmall.copyWith(
+                          color: palette.text.withValues(alpha: 0.9),
+                          fontSize: 10,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
-        const SizedBox(height: AppDimensions.spaceSM),
-        Row(
-          children: [
-            Icon(leadingIcon, size: 18, color: c.textHint),
-            Expanded(
-              child: SliderTheme(
-                data: SliderThemeData(
-                  activeTrackColor: AppColors.primary,
-                  inactiveTrackColor: c.glassBorder,
-                  thumbColor: AppColors.primary,
-                  overlayColor: AppColors.primaryGlow,
-                  trackHeight: 3,
-                  thumbShape:
-                      const RoundSliderThumbShape(enabledThumbRadius: 10),
-                ),
-                child: Slider(
-                  value: value,
-                  onChanged: onChanged,
-                ),
+      ),
+    );
+  }
+}
+
+// ── Bottom progress bar (rebuilds only on scroll via ValueListenable) ─────────
+
+class _BottomBar extends StatelessWidget {
+  const _BottomBar({
+    required this.visible,
+    required this.progress,
+    required this.chapter,
+    required this.totalWords,
+    required this.wpm,
+    required this.palette,
+  });
+
+  final bool visible;
+  final ValueListenable<double> progress;
+  final int chapter;
+  final int totalWords;
+  final int wpm;
+  final ReaderPalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      bottom: 0,
+      left: 0,
+      right: 0,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 220),
+        opacity: visible ? 1 : 0,
+        child: IgnorePointer(
+          ignoring: !visible,
+          child: Container(
+            padding: EdgeInsets.fromLTRB(
+              AppDimensions.screenPaddingH,
+              AppDimensions.spaceLG,
+              AppDimensions.screenPaddingH,
+              MediaQuery.of(context).padding.bottom + AppDimensions.spaceMD,
+            ),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
+                colors: [
+                  palette.scrim.withValues(alpha: 0.9),
+                  palette.scrim.withValues(alpha: 0.0),
+                ],
               ),
             ),
-            Icon(trailingIcon, size: 18, color: c.textSecondary),
-          ],
+            child: ValueListenableBuilder<double>(
+              valueListenable: progress,
+              builder: (context, p, _) {
+                final minutesLeft = (totalWords * (1 - p) / wpm).ceil();
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('BÖLÜM $chapter',
+                            style: AppTypography.labelSmall
+                                .copyWith(color: palette.secondaryText, fontSize: 10)),
+                        Text('$minutesLeft DK KALDI',
+                            style: AppTypography.labelSmall
+                                .copyWith(color: palette.secondaryText, fontSize: 10)),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Text('${(p * 100).round()}%',
+                            style: AppTypography.labelSmall.copyWith(
+                              color: palette.text,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 11,
+                            )),
+                        const SizedBox(width: AppDimensions.spaceMD),
+                        Expanded(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
+                            child: LinearProgressIndicator(
+                              value: p,
+                              backgroundColor: palette.secondaryText.withValues(alpha: 0.25),
+                              valueColor: const AlwaysStoppedAnimation(AppColors.primary),
+                              minHeight: 4,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
         ),
-      ],
+      ),
     );
   }
 }
