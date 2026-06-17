@@ -15,6 +15,8 @@ class BookDto {
     this.genre,
     this.description,
     this.totalPages,
+    this.progress,
+    this.totalChunks,
   });
 
   final String id;
@@ -30,6 +32,10 @@ class BookDto {
   final String? description;
   final int? totalPages;
 
+  /// Reading progress (0.0–1.0), present on /library entries.
+  final double? progress;
+  final int? totalChunks;
+
   factory BookDto.fromJson(Map<String, dynamic> json) => BookDto(
         id: json['id'] as String,
         title: json['title'] as String? ?? 'Başlıksız',
@@ -43,6 +49,8 @@ class BookDto {
         genre: json['genre'] as String?,
         description: json['description'] as String?,
         totalPages: json['total_pages'] as int?,
+        progress: (json['progress'] as num?)?.toDouble(),
+        totalChunks: json['total_chunks'] as int?,
       );
 
   Book toDomain() => Book(
@@ -52,7 +60,10 @@ class BookDto {
         genre: genre ?? _deriveGenre(),
         coverUrl: coverUrl ?? 'https://picsum.photos/seed/$id/400/600',
         synopsis: description ?? auditResult ?? '',
-        pageCount: totalPages ?? 0,
+        pageCount: (totalPages != null && totalPages! > 0)
+            ? totalPages!
+            : (totalChunks ?? 0),
+        readingProgress: progress ?? 0,
         isNew: _isRecent(),
       );
 
